@@ -1,0 +1,38 @@
+[project]
+name = "meridian-hospitality-backend"
+version = "0.1.0"
+description = "Shared starter baseline API for the Meridian Hospitality Group case study (Section 2)."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi==0.141.1",
+    "uvicorn[standard]==0.52.4",
+    "sqlalchemy==2.0.52",
+    "psycopg2-binary==2.9.12",
+    "pymongo==4.17.0",
+    "pydantic==2.13.5",
+    "pydantic-settings==2.15.0",
+    "email-validator==2.3.0",
+    "python-dotenv==1.2.3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.1.1",
+    "httpx2==2.12.0",
+    "ruff==0.16.5",
+]
+
+# This is a Dockerized application, not an installable library — don't try to
+# build/install app/ itself as a wheel, just resolve and install the deps above.
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

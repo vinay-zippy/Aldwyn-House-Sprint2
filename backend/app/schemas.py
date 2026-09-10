@@ -1,0 +1,107 @@
+"""Pydantic request/response schemas mirroring the Core Data Model and API contract."""
+
+from datetime import date, datetime
+from decimal import Decimal
+
+from pydantic import BaseModel, ConfigDict, EmailStr
+
+from app.models import FolioStatus, ReservationStatus
+
+# ---- Guest ----
+
+
+class GuestOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    email: EmailStr
+    phone: str | None = None
+    loyalty_tier: str
+    created_at: datetime
+
+
+class GuestPreferences(BaseModel):
+    dietary: list[str] = []
+    room_preferences: list[str] = []
+    notes: list[str] = []
+
+
+class GuestDetail(GuestOut):
+    preferences: GuestPreferences
+
+
+# ---- Property / RatePlan ----
+# Not exposed via their own endpoints yet (not in the Section 2.3 contract) — kept
+# here so team briefs that add e.g. a properties list endpoint can reuse them.
+
+
+class PropertyOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    brand: str
+    address: str | None = None
+    timezone: str
+
+
+class RatePlanOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    property_id: str
+    name: str
+    nightly_rate: Decimal
+    cancellation_policy: str | None = None
+
+
+# ---- Reservation / Folio ----
+
+
+class ReservationCreate(BaseModel):
+    guest_id: str
+    property_id: str
+    rate_plan_id: str | None = None
+    check_in: date
+    check_out: date
+    status: ReservationStatus = ReservationStatus.confirmed
+
+
+class ReservationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    guest_id: str
+    property_id: str
+    rate_plan_id: str | None = None
+    check_in: date
+    check_out: date
+    status: ReservationStatus
+
+
+class FolioOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    reservation_id: str
+    line_items: list[dict]
+    balance: Decimal
+    status: FolioStatus
+
+
+class ReservationDetail(ReservationOut):
+    guest: GuestOut
+    folio: FolioOut | None = None
+
+
+# ---- Availability ----
+
+
+class AvailabilitySlot(BaseModel):
+    rate_plan_id: str
+    rate_plan_name: str
+    nightly_rate: Decimal
+    capacity: int
+    booked: int
+    available: bool
