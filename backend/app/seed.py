@@ -75,9 +75,17 @@ def seed_if_empty() -> None:
             {
                 "$set": {
                     "guest_id": guest.id,
-                    "dietary": ["vegetarian"],
-                    "room_preferences": ["high floor", "away from elevator"],
-                    "notes": ["Celebrating anniversary - welcome note requested"],
+                    "dietary": [{"value": "vegetarian", "priority": "high"}],
+                    "room_preferences": [
+                        {"value": "high floor", "priority": "normal"},
+                        {"value": "away from elevator", "priority": "high"},
+                    ],
+                    "notes": [
+                        {
+                            "value": "Celebrating anniversary - welcome note requested",
+                            "priority": "normal",
+                        }
+                    ],
                     "updated_at": utcnow().isoformat(),
                 }
             },

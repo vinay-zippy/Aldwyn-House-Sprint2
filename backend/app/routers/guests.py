@@ -9,6 +9,17 @@ from app.mongo import get_preferences_collection
 router = APIRouter(prefix="/api/v1/guests", tags=["guests"])
 
 
+def _preference_items(items):
+    return [
+        schemas.PreferenceItem(
+            value=item["value"],
+            priority=item.get("priority"),
+            is_high_priority=item.get("priority") == "high",
+        )
+        for item in items
+    ]
+
+
 @router.get("/{guest_id}", response_model=schemas.GuestDetail)
 def get_guest(
     guest_id: str,
@@ -26,9 +37,9 @@ def get_guest(
 
     prefs_doc = prefs_collection.find_one({"guest_id": guest_id}) or {}
     preferences = schemas.GuestPreferences(
-        dietary=prefs_doc.get("dietary", []),
-        room_preferences=prefs_doc.get("room_preferences", []),
-        notes=prefs_doc.get("notes", []),
+        dietary=_preference_items(prefs_doc.get("dietary", [])),
+        room_preferences=_preference_items(prefs_doc.get("room_preferences", [])),
+        notes=_preference_items(prefs_doc.get("notes", [])),
     )
 
     return schemas.GuestDetail(

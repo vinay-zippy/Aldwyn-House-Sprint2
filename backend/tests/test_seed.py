@@ -42,7 +42,21 @@ def test_seed_if_empty_populates_demo_data(db_session, preferences_store, monkey
     assert folios[0].reservation_id == reservations[0].id
     assert folios[0].balance == 792
 
-    assert preferences_store[guests[0].id]["dietary"] == ["vegetarian"]
+    assert preferences_store[guests[0].id] == {
+        "guest_id": guests[0].id,
+        "dietary": [{"value": "vegetarian", "priority": "high"}],
+        "room_preferences": [
+            {"value": "high floor", "priority": "normal"},
+            {"value": "away from elevator", "priority": "high"},
+        ],
+        "notes": [
+            {
+                "value": "Celebrating anniversary - welcome note requested",
+                "priority": "normal",
+            }
+        ],
+        "updated_at": preferences_store[guests[0].id]["updated_at"],
+    }
 
 
 def test_seed_if_empty_is_idempotent(db_session, preferences_store, monkeypatch):
