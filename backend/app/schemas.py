@@ -80,6 +80,16 @@ class ReservationOut(BaseModel):
     room_number: str | None
     status: ReservationStatus
 
+class UpcomingArrivalOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    guest_id: str
+    guest_name: str
+    check_in: date
+    check_out: date
+    room_number: str | None
+    status: ReservationStatus
 
 class FolioOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
