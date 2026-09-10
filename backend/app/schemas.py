@@ -77,6 +77,7 @@ class ReservationOut(BaseModel):
     rate_plan_id: str | None = None
     check_in: date
     check_out: date
+    room_number: str | None
     status: ReservationStatus
 
 
