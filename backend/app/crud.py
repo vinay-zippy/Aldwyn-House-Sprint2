@@ -63,6 +63,15 @@ def get_guest(db: Session, guest_id: str) -> models.Guest | None:
     return db.query(models.Guest).filter(models.Guest.id == guest_id).first()
 
 
+def get_concierge_requests(db: Session, guest_id: str) -> list[models.ConciergeRequest]:
+    return (
+        db.query(models.ConciergeRequest)
+        .filter(models.ConciergeRequest.guest_id == guest_id)
+        .order_by(models.ConciergeRequest.created_at)
+        .all()
+    )
+
+
 def get_folio(db: Session, folio_id: str) -> models.Folio | None:
     return db.query(models.Folio).filter(models.Folio.id == folio_id).first()
 

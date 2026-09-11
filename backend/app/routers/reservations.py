@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.config import settings
 from app.database import get_db
+from app.mongo import get_preferences_collection
+from app.routers.guests import _preference_response
 
 router = APIRouter(prefix="/api/v1/reservations", tags=["reservations"])
 
@@ -56,6 +58,20 @@ def get_reservation(reservation_id: str, db: Session = Depends(get_db)):
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
     return reservation
+
+
+@router.get(
+    "/{reservation_id}/guest-preferences", response_model=schemas.GuestPreferenceResponse
+)
+def get_reservation_guest_preferences(
+    reservation_id: str,
+    db: Session = Depends(get_db),
+    prefs_collection=Depends(get_preferences_collection),
+):
+    reservation = crud.get_reservation(db, reservation_id)
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+    return _preference_response(reservation.guest_id, db, prefs_collection)
 
 
 @router.post("", response_model=schemas.ReservationOut, status_code=201)

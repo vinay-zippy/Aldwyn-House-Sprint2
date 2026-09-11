@@ -53,6 +53,7 @@ class Guest(Base):
     created_at = Column(DateTime, default=utcnow, nullable=False)
 
     reservations = relationship("Reservation", back_populates="guest")
+    concierge_requests = relationship("ConciergeRequest", back_populates="guest")
 
 
 class Property(Base):
@@ -97,6 +98,18 @@ class Reservation(Base):
     property = relationship("Property", back_populates="reservations")
     rate_plan = relationship("RatePlan", back_populates="reservations")
     folio = relationship("Folio", back_populates="reservation", uselist=False)
+
+
+class ConciergeRequest(Base):
+    __tablename__ = "concierge_requests"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    guest_id = Column(String(36), ForeignKey("guests.id"), nullable=False, index=True)
+    request = Column(String, nullable=False)
+    status = Column(String, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+    guest = relationship("Guest", back_populates="concierge_requests")
 
 
 class Folio(Base):
