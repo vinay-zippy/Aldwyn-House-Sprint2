@@ -2,6 +2,7 @@
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
@@ -21,10 +22,16 @@ class GuestOut(BaseModel):
     created_at: datetime
 
 
+class PreferenceItem(BaseModel):
+    value: str
+    priority: Literal["high", "normal"] | None = None
+    is_high_priority: bool
+
+
 class GuestPreferences(BaseModel):
-    dietary: list[str] = []
-    room_preferences: list[str] = []
-    notes: list[str] = []
+    dietary: list[PreferenceItem] = []
+    room_preferences: list[PreferenceItem] = []
+    notes: list[PreferenceItem] = []
 
 
 class PastRequestOut(BaseModel):
