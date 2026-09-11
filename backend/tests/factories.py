@@ -80,3 +80,17 @@ def make_property_guest_plan(db_session):
     guest = make_guest(db_session)
     db_session.commit()
     return property_, guest, rate_plan
+
+
+def make_amenity(db_session, **overrides):
+    defaults = dict(
+        name="Test Amenity",
+        category=models.AmenityCategory.dining,
+        description="Test amenity",
+        tags=[],
+    )
+    defaults.update(overrides)
+    amenity = models.Amenity(**defaults)
+    db_session.add(amenity)
+    db_session.flush()
+    return amenity

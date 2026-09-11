@@ -13,7 +13,7 @@ import enum
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import JSON, Column, Date, DateTime, Enum, ForeignKey, Numeric, String
+from sqlalchemy import JSON, Boolean, Column, Date, DateTime, Enum, ForeignKey, Numeric, String
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -119,3 +119,53 @@ class Order(Base):
     items = Column(JSON, nullable=False, default=list)  # [{ "name", "qty", "price" }, ...]
     total = Column(Numeric(10, 2), nullable=False, default=0)
     placed_at = Column(DateTime, default=utcnow, nullable=False)
+
+
+class AmenityCategory(enum.StrEnum):
+    """Amenity categories supported by the guest-preference matching engine (Story 4)."""
+
+    dining = "dining"
+    spa = "spa"
+    local_experience = "local_experience"
+
+
+class Amenity(Base):
+    """Hotel amenity/experience catalogue entry used by the preference-matching engine."""
+
+    __tablename__ = "amenities"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    property_id = Column(String(36), ForeignKey("properties.id"), nullable=True)
+    name = Column(String, nullable=False)
+    category = Column(Enum(AmenityCategory), nullable=False)
+    description = Column(String, nullable=True)
+    # Keywords compared (case-insensitively) against sanitized guest preference terms.
+    tags = Column(JSON, nullable=False, default=list)
+    is_active = Column(Boolean, nullable=False, default=True)
+
+    property = relationship("Property")
+
+
+class RecommendationReviewStatus(enum.StrEnum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+
+
+class RecommendationReview(Base):
+    """Staff review state for a guest/amenity recommendation."""
+
+    __tablename__ = "recommendation_reviews"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    guest_id = Column(String(36), ForeignKey("guests.id"), nullable=False)
+    amenity_id = Column(String(36), ForeignKey("amenities.id"), nullable=False)
+    status = Column(
+        Enum(RecommendationReviewStatus),
+        nullable=False,
+        default=RecommendationReviewStatus.pending,
+    )
+    reviewed_at = Column(DateTime, nullable=True)
+
+    guest = relationship("Guest")
+    amenity = relationship("Amenity")

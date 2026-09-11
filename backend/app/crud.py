@@ -1,7 +1,7 @@
 """Plain DB access functions, kept separate from routers so they're easy to reuse
 (e.g. from the AI agent/RAG code teams build in Sprint 3) and to unit test."""
 
-from datetime import date
+from datetime import UTC, date, datetime
 
 from sqlalchemy.orm import Session
 
@@ -64,3 +64,49 @@ def count_overlapping_reservations(
         )
         .count()
     )
+
+
+def list_amenities(db: Session, property_id: str | None = None) -> list[models.Amenity]:
+    """Active amenity catalogue, optionally scoped to one property (Story 4)."""
+    query = db.query(models.Amenity).filter(models.Amenity.is_active.is_(True))
+    if property_id:
+        query = query.filter(models.Amenity.property_id == property_id)
+    return query.all()
+
+
+def get_recommendation_review(
+    db: Session, guest_id: str, amenity_id: str
+) -> models.RecommendationReview | None:
+    return (
+        db.query(models.RecommendationReview)
+        .filter(
+            models.RecommendationReview.guest_id == guest_id,
+            models.RecommendationReview.amenity_id == amenity_id,
+        )
+        .first()
+    )
+
+
+def list_recommendation_reviews(db: Session, guest_id: str) -> list[models.RecommendationReview]:
+    return (
+        db.query(models.RecommendationReview)
+        .filter(models.RecommendationReview.guest_id == guest_id)
+        .all()
+    )
+
+
+def save_recommendation_review(
+    db: Session,
+    guest_id: str,
+    amenity_id: str,
+    status: models.RecommendationReviewStatus,
+) -> models.RecommendationReview:
+    review = get_recommendation_review(db, guest_id, amenity_id)
+    if review is None:
+        review = models.RecommendationReview(guest_id=guest_id, amenity_id=amenity_id)
+        db.add(review)
+    review.status = status
+    review.reviewed_at = datetime.now(UTC)
+    db.commit()
+    db.refresh(review)
+    return review

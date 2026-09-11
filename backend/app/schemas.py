@@ -5,7 +5,12 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
-from app.models import FolioStatus, ReservationStatus
+from app.models import (
+    AmenityCategory,
+    FolioStatus,
+    RecommendationReviewStatus,
+    ReservationStatus,
+)
 
 # ---- Guest ----
 
@@ -25,6 +30,8 @@ class GuestPreferences(BaseModel):
     dietary: list[str] = []
     room_preferences: list[str] = []
     notes: list[str] = []
+    interests: list[str] = []
+    high_priority: list[str] = []
 
 
 class GuestDetail(GuestOut):
@@ -105,3 +112,39 @@ class AvailabilitySlot(BaseModel):
     capacity: int
     booked: int
     available: bool
+
+
+# ---- Amenities / preference matching (Story 4) ----
+
+
+class AmenityOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    property_id: str | None = None
+    name: str
+    category: AmenityCategory
+    description: str | None = None
+    tags: list[str] = []
+    is_active: bool = True
+
+
+class AmenityRecommendation(BaseModel):
+    amenity: AmenityOut
+    matched_terms: list[str] = []
+    # Recommendations are always surfaced for staff review before reaching a guest.
+    status: str = "pending_staff_review"
+
+
+class RecommendationReviewUpdate(BaseModel):
+    status: RecommendationReviewStatus
+
+
+class RecommendationReviewOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    guest_id: str
+    amenity_id: str
+    status: RecommendationReviewStatus
+    reviewed_at: datetime | None = None

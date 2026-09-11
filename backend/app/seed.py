@@ -68,6 +68,32 @@ def seed_if_empty() -> None:
         )
         db.add(folio)
 
+        db.add_all(
+            [
+                models.Amenity(
+                    property_id=property_.id,
+                    name="Sunset Grill",
+                    category=models.AmenityCategory.dining,
+                    description="On-site restaurant with vegetarian and vegan menus",
+                    tags=["vegetarian", "vegan", "dining"],
+                ),
+                models.Amenity(
+                    property_id=property_.id,
+                    name="Serenity Spa",
+                    category=models.AmenityCategory.spa,
+                    description="Full-service spa offering massage and wellness treatments",
+                    tags=["wellness", "massage", "spa"],
+                ),
+                models.Amenity(
+                    property_id=property_.id,
+                    name="Harbor Walking Tour",
+                    category=models.AmenityCategory.local_experience,
+                    description="Guided local sightseeing tour of the harbor district",
+                    tags=["local", "tour", "sightseeing"],
+                ),
+            ]
+        )
+
         db.commit()
 
         get_preferences_collection().update_one(
@@ -77,6 +103,7 @@ def seed_if_empty() -> None:
                     "guest_id": guest.id,
                     "dietary": ["vegetarian"],
                     "room_preferences": ["high floor", "away from elevator"],
+                    "high_priority": ["away from elevator"],
                     "notes": ["Celebrating anniversary - welcome note requested"],
                     "updated_at": utcnow().isoformat(),
                 }
