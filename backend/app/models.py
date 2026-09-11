@@ -120,3 +120,27 @@ class Order(Base):
     items = Column(JSON, nullable=False, default=list)  # [{ "name", "qty", "price" }, ...]
     total = Column(Numeric(10, 2), nullable=False, default=0)
     placed_at = Column(DateTime, default=utcnow, nullable=False)
+
+
+class RoomStatus(enum.StrEnum):
+    available = "available"
+    ready = "ready"
+    occupied = "occupied"
+    dirty = "dirty"
+    cleaning = "cleaning"
+    inspection_pending = "inspection_pending"
+    maintenance = "maintenance"
+    out_of_service = "out_of_service"
+    reserved = "reserved"
+
+
+class Room(Base):
+    __tablename__ = "rooms"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    room_number = Column(String, nullable=False, unique=True, index=True)
+    floor = Column(String, nullable=False)
+    status = Column(Enum(RoomStatus), nullable=False, default=RoomStatus.available)
+    room_type = Column(String, nullable=False, default="standard")
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
