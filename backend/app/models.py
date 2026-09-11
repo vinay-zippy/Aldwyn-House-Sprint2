@@ -90,6 +90,7 @@ class Reservation(Base):
     rate_plan_id = Column(String(36), ForeignKey("rate_plans.id"), nullable=True)
     check_in = Column(Date, nullable=False)
     check_out = Column(Date, nullable=False)
+    room_number = Column(String, nullable=True)
     status = Column(Enum(ReservationStatus), nullable=False, default=ReservationStatus.confirmed)
 
     guest = relationship("Guest", back_populates="reservations")

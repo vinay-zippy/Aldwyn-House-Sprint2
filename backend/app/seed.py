@@ -52,6 +52,7 @@ def seed_if_empty() -> None:
             rate_plan_id=rate_plan.id,
             check_in=date.today() + timedelta(days=3),
             check_out=date.today() + timedelta(days=6),
+            room_number="101",
             status=models.ReservationStatus.confirmed,
         )
         db.add(reservation)
