@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 
 from app import models
-from tests.factories import make_property_guest_plan, make_reservation
+from tests.factories import make_concierge_request, make_property_guest_plan, make_reservation
 
 
 def test_create_and_fetch_reservation(client, db_session):
@@ -43,6 +43,27 @@ def test_create_reservation_unknown_guest_returns_400(client, db_session):
 def test_get_reservation_not_found_returns_404(client, db_session):
     resp = client.get("/api/v1/reservations/does-not-exist")
     assert resp.status_code == 404
+
+
+def test_reservation_guest_preferences_use_reservation_guest(client, db_session, preferences_store):
+    property_, guest, rate_plan = make_property_guest_plan(db_session)
+    reservation = make_reservation(db_session, guest, property_, rate_plan)
+    make_concierge_request(db_session, guest)
+    db_session.commit()
+    preferences_store[guest.id] = {
+        "guest_id": guest.id,
+        "dietary": [{"value": "vegetarian", "priority": "high"}],
+    }
+
+    response = client.get(f"/api/v1/reservations/{reservation.id}/guest-preferences")
+
+    assert response.status_code == 200
+    assert response.json()["dietary_preferences"] == [
+        {"value": "vegetarian", "priority": "high", "is_high_priority": True}
+    ]
+    assert response.json()["past_requests"] == [
+        {"request": "Extra pillows", "status": "completed"}
+    ]
 
 
 def test_list_reservations_filters_by_status(client, db_session):

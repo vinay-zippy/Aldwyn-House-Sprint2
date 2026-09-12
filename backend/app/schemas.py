@@ -34,6 +34,17 @@ class GuestPreferences(BaseModel):
     notes: list[PreferenceItem] = []
 
 
+class PastRequestOut(BaseModel):
+    request: str
+    status: str
+
+
+class GuestPreferenceResponse(BaseModel):
+    dietary_preferences: list[PreferenceItem] = []
+    room_preferences: list[PreferenceItem] = []
+    past_requests: list[PastRequestOut] = []
+
+
 class GuestDetail(GuestOut):
     preferences: GuestPreferences
 
