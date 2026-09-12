@@ -42,6 +42,11 @@ def test_seed_if_empty_populates_demo_data(db_session, preferences_store, monkey
     jamie_folio = next(f for f in folios if f.reservation_id == jamie_reservation.id)
     assert jamie_folio.balance == 792
 
+    concierge_requests = db_session.query(models.ConciergeRequest).all()
+    assert len(concierge_requests) == 1
+    assert concierge_requests[0].guest_id == jamie.id
+    assert concierge_requests[0].request == "Extra pillows"
+
     assert preferences_store[jamie.id] == {
         "guest_id": jamie.id,
         "dietary": [{"value": "vegetarian", "priority": "high"}],

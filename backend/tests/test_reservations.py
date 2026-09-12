@@ -117,3 +117,108 @@ def test_list_reservations_filters_by_date_range(client, db_session):
     assert resp.status_code == 200
     body = resp.json()
     assert [r["id"] for r in body] == [near.id]
+
+
+def test_upcoming_arrivals_returns_three_reservations(client, db_session):
+    property_, guest, rate_plan = make_property_guest_plan(db_session)
+
+    for days in (1, 3, 5):
+        make_reservation(
+            db_session,
+            guest,
+            property_,
+            rate_plan,
+            check_in=date.today() + timedelta(days=days),
+            check_out=date.today() + timedelta(days=days + 2),
+        )
+
+    db_session.commit()
+
+    resp = client.get(
+        "/api/v1/reservations/upcoming-arrivals",
+        params={"property_id": property_.id},
+    )
+
+    assert resp.status_code == 200
+    assert len(resp.json()) == 3
+
+
+def test_upcoming_arrival_contains_required_fields(client, db_session):
+    property_, guest, rate_plan = make_property_guest_plan(db_session)
+
+    reservation = make_reservation(
+        db_session,
+        guest,
+        property_,
+        rate_plan,
+        room_number="101",
+        check_in=date.today() + timedelta(days=1),
+        check_out=date.today() + timedelta(days=3),
+    )
+    db_session.commit()
+
+    resp = client.get(
+        "/api/v1/reservations/upcoming-arrivals",
+        params={"property_id": property_.id},
+    )
+
+    assert resp.status_code == 200
+    arrival = resp.json()[0]
+
+    assert arrival["guest_name"] == guest.name
+    assert arrival["check_in"] == str(reservation.check_in)
+    assert arrival["check_out"] == str(reservation.check_out)
+    assert arrival["room_number"] == "101"
+    assert arrival["status"] == "confirmed"
+
+def test_upcoming_arrivals_excludes_cancelled_reservations(client, db_session):
+    property_, guest, rate_plan = make_property_guest_plan(db_session)
+
+    make_reservation(
+        db_session,
+        guest,
+        property_,
+        rate_plan,
+        room_number="101",
+        check_in=date.today() + timedelta(days=1),
+        check_out=date.today() + timedelta(days=3),
+        status=models.ReservationStatus.confirmed,
+    )
+
+    make_reservation(
+        db_session,
+        guest,
+        property_,
+        rate_plan,
+        room_number="102",
+        check_in=date.today() + timedelta(days=2),
+        check_out=date.today() + timedelta(days=4),
+        status=models.ReservationStatus.cancelled,
+    )
+
+    db_session.commit()
+
+    resp = client.get(
+        "/api/v1/reservations/upcoming-arrivals",
+        params={"property_id": property_.id},
+    )
+
+    assert resp.status_code == 200
+    arrivals = resp.json()
+
+    assert len(arrivals) == 1
+    assert arrivals[0]["room_number"] == "101"
+    assert arrivals[0]["status"] == "confirmed"
+
+def test_upcoming_arrivals_returns_empty_when_no_reservations(client, db_session):
+    property_, guest, rate_plan = make_property_guest_plan(db_session)
+
+    db_session.commit()
+
+    resp = client.get(
+        "/api/v1/reservations/upcoming-arrivals",
+        params={"property_id": property_.id},
+    )
+
+    assert resp.status_code == 200
+    assert resp.json() == []

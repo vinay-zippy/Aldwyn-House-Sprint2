@@ -26,6 +26,26 @@ def list_reservations(
         query = query.filter(models.Reservation.check_in <= date_to)
     return query.order_by(models.Reservation.check_in).all()
 
+def list_upcoming_arrivals(
+    db: Session,
+    date_from: date,
+    date_to: date,
+    property_id: str | None = None,
+):
+    query = (
+        db.query(models.Reservation)
+        .join(models.Guest)
+        .filter(
+            models.Reservation.check_in >= date_from,
+            models.Reservation.check_in <= date_to,
+            models.Reservation.status != models.ReservationStatus.cancelled,
+        )
+    )
+
+    if property_id:
+        query = query.filter(models.Reservation.property_id == property_id)
+
+    return query.order_by(models.Reservation.check_in).all()
 
 def get_reservation(db: Session, reservation_id: str) -> models.Reservation | None:
     return db.query(models.Reservation).filter(models.Reservation.id == reservation_id).first()

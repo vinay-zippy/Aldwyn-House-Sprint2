@@ -14,7 +14,22 @@ from app.models import utcnow
 from app.mongo import get_preferences_collection
 
 
+def seed_rooms() -> None:
+    db = SessionLocal()
+    try:
+        for floor in range(1, 8):
+            for room_index in range(1, 16):
+                room_number = f'{floor}{room_index:02d}'
+                existing = db.query(models.Room).filter(models.Room.room_number == room_number).first()
+                if existing is None:
+                    db.add(models.Room(room_number=room_number, floor=str(floor), status=models.RoomStatus.available, room_type='standard'))
+        db.commit()
+    finally:
+        db.close()
+
 def seed_if_empty() -> None:
+    seed_rooms()
+
     db = SessionLocal()
 
     try:
@@ -131,11 +146,21 @@ def seed_if_empty() -> None:
                 rate_plan_id=rate_plan.id,
                 check_in=date.today() + timedelta(days=3 + index),
                 check_out=date.today() + timedelta(days=6 + index),
+                room_number=f"{index + 1}01",
                 status=models.ReservationStatus.confirmed,
             )
 
             db.add(reservation)
             db.flush()
+
+            if index == 0:
+                db.add(
+                    models.ConciergeRequest(
+                        guest_id=guest.id,
+                        request="Extra pillows",
+                        status="completed",
+                    )
+                )
 
             # Folio
             folio = models.Folio(
