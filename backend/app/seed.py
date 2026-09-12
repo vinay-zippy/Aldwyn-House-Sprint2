@@ -20,9 +20,20 @@ def seed_rooms() -> None:
         for floor in range(1, 8):
             for room_index in range(1, 16):
                 room_number = f'{floor}{room_index:02d}'
-                existing = db.query(models.Room).filter(models.Room.room_number == room_number).first()
+                existing = (
+                    db.query(models.Room)
+                    .filter(models.Room.room_number == room_number)
+                    .first()
+                )
                 if existing is None:
-                    db.add(models.Room(room_number=room_number, floor=str(floor), status=models.RoomStatus.available, room_type='standard'))
+                    db.add(
+                        models.Room(
+                            room_number=room_number,
+                            floor=str(floor),
+                            status=models.RoomStatus.available,
+                            room_type='standard',
+                        )
+                    )
         db.commit()
     finally:
         db.close()
