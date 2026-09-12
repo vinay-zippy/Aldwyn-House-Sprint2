@@ -38,6 +38,43 @@ def seed_rooms() -> None:
     finally:
         db.close()
 
+
+def seed_amenities(db, property_id: str) -> None:
+    amenity_data = [
+        {
+            "name": "Sunset Grill",
+            "category": models.AmenityCategory.dining,
+            "description": "On-site restaurant with vegetarian and vegan menus",
+            "tags": ["vegetarian", "vegan", "dining"],
+        },
+        {
+            "name": "Serenity Spa",
+            "category": models.AmenityCategory.spa,
+            "description": "Full-service spa offering massage and wellness treatments",
+            "tags": ["wellness", "massage", "spa"],
+        },
+        {
+            "name": "Harbor Walking Tour",
+            "category": models.AmenityCategory.local_experience,
+            "description": "Guided local sightseeing tour of the harbor district",
+            "tags": ["local", "tour", "sightseeing"],
+        },
+    ]
+    existing_names = {
+        name
+        for (name,) in db.query(models.Amenity.name)
+        .filter(models.Amenity.property_id == property_id)
+        .all()
+    }
+    db.add_all(
+        [
+            models.Amenity(property_id=property_id, **data)
+            for data in amenity_data
+            if data["name"] not in existing_names
+        ]
+    )
+
+
 def seed_if_empty() -> None:
     seed_rooms()
 
@@ -45,6 +82,10 @@ def seed_if_empty() -> None:
 
     try:
         if db.query(models.Guest).count() > 0:
+            property_ = db.query(models.Property).first()
+            if property_:
+                seed_amenities(db, property_.id)
+                db.commit()
             return
 
         # Property
@@ -205,31 +246,7 @@ def seed_if_empty() -> None:
                 upsert=True,
             )
 
-        db.add_all(
-            [
-                models.Amenity(
-                    property_id=property_.id,
-                    name="Sunset Grill",
-                    category=models.AmenityCategory.dining,
-                    description="On-site restaurant with vegetarian and vegan menus",
-                    tags=["vegetarian", "vegan", "dining"],
-                ),
-                models.Amenity(
-                    property_id=property_.id,
-                    name="Serenity Spa",
-                    category=models.AmenityCategory.spa,
-                    description="Full-service spa offering massage and wellness treatments",
-                    tags=["wellness", "massage", "spa"],
-                ),
-                models.Amenity(
-                    property_id=property_.id,
-                    name="Harbor Walking Tour",
-                    category=models.AmenityCategory.local_experience,
-                    description="Guided local sightseeing tour of the harbor district",
-                    tags=["local", "tour", "sightseeing"],
-                ),
-            ]
-        )
+        seed_amenities(db, property_.id)
 
         db.commit()
 

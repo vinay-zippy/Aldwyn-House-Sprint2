@@ -72,3 +72,17 @@ def test_seed_if_empty_is_idempotent(db_session, preferences_store, monkeypatch)
 
     assert db_session.query(models.Guest).count() == 4
     assert db_session.query(models.Reservation).count() == 4
+
+
+def test_seed_if_empty_adds_amenities_to_existing_story_data(
+    db_session, preferences_store, monkeypatch
+):
+    _patch_seed_targets(monkeypatch, preferences_store)
+
+    seed_if_empty()
+    db_session.query(models.Amenity).delete()
+    db_session.commit()
+
+    seed_if_empty()
+
+    assert db_session.query(models.Amenity).count() == 3

@@ -11,7 +11,14 @@ def test_amenity_recommendations_returns_matches(client, db_session, preferences
         tags=["wellness", "massage"],
     )
     db_session.commit()
-    preferences_store[guest.id] = {"guest_id": guest.id, "notes": ["wellness"]}
+    preferences_store[guest.id] = {
+        "guest_id": guest.id,
+        "name": "Private Guest",
+        "email": "private@example.com",
+        "phone": "+1-555-0100",
+        "reservation_id": "reservation-private",
+        "notes": [{"value": "wellness", "priority": "high"}],
+    }
 
     response = client.get(f"/api/v1/guests/{guest.id}/amenity-recommendations")
 

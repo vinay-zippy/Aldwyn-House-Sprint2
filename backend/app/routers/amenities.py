@@ -10,6 +10,16 @@ from app.mongo import get_preferences_collection
 router = APIRouter(prefix="/api/v1/guests", tags=["amenities"])
 
 
+def _matching_preferences(preferences_document: dict) -> dict[str, list[str]]:
+    matching_preferences = {}
+    for field in ("dietary", "room_preferences", "notes", "interests", "high_priority"):
+        values = preferences_document.get(field, [])
+        matching_preferences[field] = [
+            item["value"] if isinstance(item, dict) else item for item in values
+        ]
+    return matching_preferences
+
+
 @router.get(
     "/{guest_id}/amenity-recommendations",
     response_model=list[schemas.AmenityRecommendation],
@@ -36,7 +46,7 @@ def get_amenity_recommendations(
         for review in crud.list_recommendation_reviews(db, guest_id)
     }
 
-    matches = generate_recommendations(prefs_doc, amenities)
+    matches = generate_recommendations(_matching_preferences(prefs_doc), amenities)
 
     return [
         schemas.AmenityRecommendation(
