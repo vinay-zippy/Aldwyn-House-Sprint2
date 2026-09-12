@@ -26,6 +26,26 @@ def list_reservations(
         query = query.filter(models.Reservation.check_in <= date_to)
     return query.order_by(models.Reservation.check_in).all()
 
+def list_upcoming_arrivals(
+    db: Session,
+    date_from: date,
+    date_to: date,
+    property_id: str | None = None,
+):
+    query = (
+        db.query(models.Reservation)
+        .join(models.Guest)
+        .filter(
+            models.Reservation.check_in >= date_from,
+            models.Reservation.check_in <= date_to,
+            models.Reservation.status != models.ReservationStatus.cancelled,
+        )
+    )
+
+    if property_id:
+        query = query.filter(models.Reservation.property_id == property_id)
+
+    return query.order_by(models.Reservation.check_in).all()
 
 def get_reservation(db: Session, reservation_id: str) -> models.Reservation | None:
     return db.query(models.Reservation).filter(models.Reservation.id == reservation_id).first()
@@ -41,6 +61,15 @@ def create_reservation(db: Session, payload: schemas.ReservationCreate) -> model
 
 def get_guest(db: Session, guest_id: str) -> models.Guest | None:
     return db.query(models.Guest).filter(models.Guest.id == guest_id).first()
+
+
+def get_concierge_requests(db: Session, guest_id: str) -> list[models.ConciergeRequest]:
+    return (
+        db.query(models.ConciergeRequest)
+        .filter(models.ConciergeRequest.guest_id == guest_id)
+        .order_by(models.ConciergeRequest.created_at)
+        .all()
+    )
 
 
 def get_folio(db: Session, folio_id: str) -> models.Folio | None:

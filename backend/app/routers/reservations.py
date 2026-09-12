@@ -1,10 +1,13 @@
-from datetime import date
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
+from app.config import settings
 from app.database import get_db
+from app.mongo import get_preferences_collection
+from app.routers.guests import _preference_response
 
 router = APIRouter(prefix="/api/v1/reservations", tags=["reservations"])
 
@@ -21,6 +24,33 @@ def list_reservations(
         db, property_id=property_id, status=status, date_from=date_from, date_to=date_to
     )
 
+@router.get("/upcoming-arrivals", response_model=list[schemas.UpcomingArrivalOut])
+def upcoming_arrivals(
+    property_id: str | None = None,
+    db: Session = Depends(get_db),
+):
+    today = date.today()
+    end_date = today + timedelta(days=settings.upcoming_arrivals_days)
+
+    reservations = crud.list_upcoming_arrivals(
+        db,
+        date_from=today,
+        date_to=end_date,
+        property_id=property_id,
+    )
+
+    return [
+        {
+            "id": reservation.id,
+            "guest_id": reservation.guest_id,
+            "guest_name": reservation.guest.name,
+            "check_in": reservation.check_in,
+            "check_out": reservation.check_out,
+            "room_number": reservation.room_number,
+            "status": reservation.status,
+        }
+        for reservation in reservations
+    ]
 
 @router.get("/{reservation_id}", response_model=schemas.ReservationDetail)
 def get_reservation(reservation_id: str, db: Session = Depends(get_db)):
@@ -28,6 +58,20 @@ def get_reservation(reservation_id: str, db: Session = Depends(get_db)):
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
     return reservation
+
+
+@router.get(
+    "/{reservation_id}/guest-preferences", response_model=schemas.GuestPreferenceResponse
+)
+def get_reservation_guest_preferences(
+    reservation_id: str,
+    db: Session = Depends(get_db),
+    prefs_collection=Depends(get_preferences_collection),
+):
+    reservation = crud.get_reservation(db, reservation_id)
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+    return _preference_response(reservation.guest_id, db, prefs_collection)
 
 
 @router.post("", response_model=schemas.ReservationOut, status_code=201)

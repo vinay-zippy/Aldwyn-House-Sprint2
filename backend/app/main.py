@@ -19,11 +19,10 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Meridian Hospitality Group API",
+    title="The Aldwyn House - Sprint 2: Guest 360 Dashboard & AI-Assisted Preference Matching",
     description=(
-        "Shared starter baseline API (Section 2 of the ADM case study). "
-        "Extend with your team's vertical-specific entities/endpoints per your brief "
-        "(Section 4) rather than redesigning what's here."
+        "Backend API for The Aldwyn House Sprint 2 Guest 360 Dashboard and "
+        "AI-assisted guest preference matching."
     ),
     version="0.1.0",
     lifespan=lifespan,

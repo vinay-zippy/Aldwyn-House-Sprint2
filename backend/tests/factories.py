@@ -59,6 +59,15 @@ def make_reservation(db_session, guest, property_, rate_plan, **overrides):
     return reservation
 
 
+def make_concierge_request(db_session, guest, **overrides):
+    defaults = dict(guest_id=guest.id, request="Extra pillows", status="completed")
+    defaults.update(overrides)
+    concierge_request = models.ConciergeRequest(**defaults)
+    db_session.add(concierge_request)
+    db_session.flush()
+    return concierge_request
+
+
 def make_folio(db_session, reservation, **overrides):
     defaults = dict(
         reservation_id=reservation.id,

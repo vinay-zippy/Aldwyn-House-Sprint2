@@ -2,47 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Aldwyn House | Guest 360</title>
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aldwyn House · Guest 360</title>
   </head>
   <body>
-    <main class="shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">ALDWYN HOUSE / CONCIERGE DESK</p>
-          <h1>Guest 360</h1>
-        </div>
-        <div class="system-status"><span></span> Live reservation feed</div>
-      </header>
-
-      <section class="intro">
-        <div>
-          <p class="eyebrow">ARRIVALS CONTROL</p>
-          <h2>Make every arrival feel considered.</h2>
-          <p class="lede">Upcoming guests, preferences, and amenity recommendations in one review queue.</p>
-        </div>
-        <label class="api-field">API endpoint <input id="api-url" value="http://localhost:8000" /></label>
-      </section>
-
-      <section class="dashboard-grid">
-        <aside class="panel arrivals-panel">
-          <div class="panel-heading"><div><p class="eyebrow">NEXT UP</p><h3>Upcoming arrivals</h3></div><span id="arrival-count" class="count">0</span></div>
-          <div id="arrivals" class="arrival-list"><p class="empty">Loading arrivals...</p></div>
-        </aside>
-
-        <section class="panel guest-panel">
-          <div id="guest-empty" class="empty-state"><span class="monogram">AH</span><h3>Select an arrival</h3><p>Choose a guest to review their stay details and tailored recommendations.</p></div>
-          <div id="guest-detail" hidden>
-            <div class="guest-header"><div><p class="eyebrow">GUEST PROFILE</p><h3 id="guest-name"></h3><p id="guest-tier" class="muted"></p></div><span id="guest-status" class="status-badge"></span></div>
-            <div class="arrival-strip"><div><span>CHECK-IN</span><strong id="check-in"></strong></div><div><span>CHECK-OUT</span><strong id="check-out"></strong></div><div><span>RESERVATION</span><strong id="reservation-id"></strong></div></div>
-            <div class="preference-section"><div class="section-title"><h4>Preference profile</h4><span id="priority-count" class="priority-label"></span></div><div id="preferences" class="preference-grid"></div></div>
-            <div class="recommendation-section"><div class="section-title"><div><p class="eyebrow">STAFF REVIEW QUEUE</p><h4>Amenity recommendations</h4></div><span id="recommendation-count" class="count"></span></div><div id="recommendations" class="recommendation-list"></div></div>
-          </div>
-        </section>
-      </section>
-      <p id="error" class="error" role="alert"></p>
-    </main>
-    <script src="app.js"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
