@@ -1,7 +1,7 @@
 """Plain DB access functions, kept separate from routers so they're easy to reuse
 (e.g. from the AI agent/RAG code teams build in Sprint 3) and to unit test."""
 
-from datetime import date
+from datetime import UTC, date, datetime
 
 from sqlalchemy.orm import Session
 
@@ -26,6 +26,26 @@ def list_reservations(
         query = query.filter(models.Reservation.check_in <= date_to)
     return query.order_by(models.Reservation.check_in).all()
 
+def list_upcoming_arrivals(
+    db: Session,
+    date_from: date,
+    date_to: date,
+    property_id: str | None = None,
+):
+    query = (
+        db.query(models.Reservation)
+        .join(models.Guest)
+        .filter(
+            models.Reservation.check_in >= date_from,
+            models.Reservation.check_in <= date_to,
+            models.Reservation.status != models.ReservationStatus.cancelled,
+        )
+    )
+
+    if property_id:
+        query = query.filter(models.Reservation.property_id == property_id)
+
+    return query.order_by(models.Reservation.check_in).all()
 
 def get_reservation(db: Session, reservation_id: str) -> models.Reservation | None:
     return db.query(models.Reservation).filter(models.Reservation.id == reservation_id).first()
@@ -41,6 +61,15 @@ def create_reservation(db: Session, payload: schemas.ReservationCreate) -> model
 
 def get_guest(db: Session, guest_id: str) -> models.Guest | None:
     return db.query(models.Guest).filter(models.Guest.id == guest_id).first()
+
+
+def get_concierge_requests(db: Session, guest_id: str) -> list[models.ConciergeRequest]:
+    return (
+        db.query(models.ConciergeRequest)
+        .filter(models.ConciergeRequest.guest_id == guest_id)
+        .order_by(models.ConciergeRequest.created_at)
+        .all()
+    )
 
 
 def get_folio(db: Session, folio_id: str) -> models.Folio | None:
@@ -64,3 +93,49 @@ def count_overlapping_reservations(
         )
         .count()
     )
+
+
+def list_amenities(db: Session, property_id: str | None = None) -> list[models.Amenity]:
+    """Active amenity catalogue, optionally scoped to one property (Story 4)."""
+    query = db.query(models.Amenity).filter(models.Amenity.is_active.is_(True))
+    if property_id:
+        query = query.filter(models.Amenity.property_id == property_id)
+    return query.all()
+
+
+def get_recommendation_review(
+    db: Session, guest_id: str, amenity_id: str
+) -> models.RecommendationReview | None:
+    return (
+        db.query(models.RecommendationReview)
+        .filter(
+            models.RecommendationReview.guest_id == guest_id,
+            models.RecommendationReview.amenity_id == amenity_id,
+        )
+        .first()
+    )
+
+
+def list_recommendation_reviews(db: Session, guest_id: str) -> list[models.RecommendationReview]:
+    return (
+        db.query(models.RecommendationReview)
+        .filter(models.RecommendationReview.guest_id == guest_id)
+        .all()
+    )
+
+
+def save_recommendation_review(
+    db: Session,
+    guest_id: str,
+    amenity_id: str,
+    status: models.RecommendationReviewStatus,
+) -> models.RecommendationReview:
+    review = get_recommendation_review(db, guest_id, amenity_id)
+    if review is None:
+        review = models.RecommendationReview(guest_id=guest_id, amenity_id=amenity_id)
+        db.add(review)
+    review.status = status
+    review.reviewed_at = datetime.now(UTC)
+    db.commit()
+    db.refresh(review)
+    return review

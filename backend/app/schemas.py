@@ -2,10 +2,16 @@
 
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
-from app.models import FolioStatus, ReservationStatus
+from app.models import (
+    AmenityCategory,
+    FolioStatus,
+    RecommendationReviewStatus,
+    ReservationStatus,
+)
 
 # ---- Guest ----
 
@@ -21,10 +27,27 @@ class GuestOut(BaseModel):
     created_at: datetime
 
 
+class PreferenceItem(BaseModel):
+    value: str
+    priority: Literal["high", "normal"] | None = None
+    is_high_priority: bool
+
+
 class GuestPreferences(BaseModel):
-    dietary: list[str] = []
-    room_preferences: list[str] = []
-    notes: list[str] = []
+    dietary: list[PreferenceItem] = []
+    room_preferences: list[PreferenceItem] = []
+    notes: list[PreferenceItem] = []
+
+
+class PastRequestOut(BaseModel):
+    request: str
+    status: str
+
+
+class GuestPreferenceResponse(BaseModel):
+    dietary_preferences: list[PreferenceItem] = []
+    room_preferences: list[PreferenceItem] = []
+    past_requests: list[PastRequestOut] = []
 
 
 class GuestDetail(GuestOut):
@@ -77,8 +100,19 @@ class ReservationOut(BaseModel):
     rate_plan_id: str | None = None
     check_in: date
     check_out: date
+    room_number: str | None
     status: ReservationStatus
 
+class UpcomingArrivalOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    guest_id: str
+    guest_name: str
+    check_in: date
+    check_out: date
+    room_number: str | None
+    status: ReservationStatus
 
 class FolioOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -105,3 +139,39 @@ class AvailabilitySlot(BaseModel):
     capacity: int
     booked: int
     available: bool
+
+
+# ---- Amenities / preference matching (Story 4) ----
+
+
+class AmenityOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    property_id: str | None = None
+    name: str
+    category: AmenityCategory
+    description: str | None = None
+    tags: list[str] = []
+    is_active: bool = True
+
+
+class AmenityRecommendation(BaseModel):
+    amenity: AmenityOut
+    matched_terms: list[str] = []
+    # Recommendations are always surfaced for staff review before reaching a guest.
+    status: str = "pending_staff_review"
+
+
+class RecommendationReviewUpdate(BaseModel):
+    status: RecommendationReviewStatus
+
+
+class RecommendationReviewOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    guest_id: str
+    amenity_id: str
+    status: RecommendationReviewStatus
+    reviewed_at: datetime | None = None

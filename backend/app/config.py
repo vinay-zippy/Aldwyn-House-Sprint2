@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     seed_on_startup: bool = True
     default_property_capacity: int = 20
+    upcoming_arrivals_days: int = 7
     cors_origins: list[str] = ["http://localhost:5173"]
 
     # Set to true only by the test suite (see tests/conftest.py) to skip touching
