@@ -37,6 +37,11 @@ def _preference_response(guest_id: str, db: Session, prefs_collection: Collectio
     )
 
 
+@router.get("", response_model=list[schemas.GuestOut])
+def list_guests(db: Session = Depends(get_db)):
+    return crud.list_guests(db)
+
+
 @router.get("/{guest_id}/preferences", response_model=schemas.GuestPreferenceResponse)
 def get_guest_preferences(
     guest_id: str,

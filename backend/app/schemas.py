@@ -11,6 +11,7 @@ from app.models import (
     FolioStatus,
     RecommendationReviewStatus,
     ReservationStatus,
+    RoomStatus,
 )
 
 # ---- Guest ----
@@ -175,3 +176,24 @@ class RecommendationReviewOut(BaseModel):
     amenity_id: str
     status: RecommendationReviewStatus
     reviewed_at: datetime | None = None
+
+
+# ---- Rooms & Dashboard ----
+
+
+class RoomOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    room_number: str
+    floor: str
+    status: RoomStatus
+    room_type: str
+
+
+class DashboardSummaryOut(BaseModel):
+    upcoming_arrivals: int
+    in_house_guests: int
+    departures: int
+    high_priority_guests: int
+    room_summary: dict[str, int]

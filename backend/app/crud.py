@@ -1,7 +1,7 @@
 """Plain DB access functions, kept separate from routers so they're easy to reuse
 (e.g. from the AI agent/RAG code teams build in Sprint 3) and to unit test."""
 
-from datetime import UTC, date, datetime
+from datetime import date, datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -135,7 +135,99 @@ def save_recommendation_review(
         review = models.RecommendationReview(guest_id=guest_id, amenity_id=amenity_id)
         db.add(review)
     review.status = status
-    review.reviewed_at = datetime.now(UTC)
+    review.reviewed_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(review)
     return review
+
+
+def list_guests(db: Session) -> list[models.Guest]:
+    return db.query(models.Guest).order_by(models.Guest.name).all()
+
+
+def list_rooms(db: Session, floor: str | None = None) -> list[models.Room]:
+    query = db.query(models.Room)
+    if floor:
+        query = query.filter(models.Room.floor == floor)
+    return query.order_by(models.Room.floor, models.Room.room_number).all()
+
+
+def get_dashboard_summary(db: Session, prefs_collection=None) -> dict:
+    today = date.today()
+    upcoming_count = (
+        db.query(models.Reservation)
+        .filter(
+            models.Reservation.check_in >= today,
+            models.Reservation.status != models.ReservationStatus.cancelled,
+        )
+        .count()
+    )
+    in_house_count = (
+        db.query(models.Reservation)
+        .filter(models.Reservation.status == models.ReservationStatus.checked_in)
+        .count()
+    )
+    departures_count = (
+        db.query(models.Reservation)
+        .filter(
+            models.Reservation.check_out == today,
+            models.Reservation.status != models.ReservationStatus.cancelled,
+        )
+        .count()
+    )
+
+    upcoming_res = (
+        db.query(models.Reservation)
+        .filter(
+            models.Reservation.check_in >= today,
+            models.Reservation.status != models.ReservationStatus.cancelled,
+        )
+        .all()
+    )
+
+    high_priority_count = 0
+    if prefs_collection is not None:
+        guest_ids = {r.guest_id for r in upcoming_res}
+        for gid in guest_ids:
+            try:
+                prefs_doc = prefs_collection.find_one({"guest_id": gid}) or {}
+            except Exception:
+                prefs_doc = {}
+            has_hp = False
+            for category in ("dietary", "room_preferences", "notes"):
+                items = prefs_doc.get(category, [])
+                if any(
+                    isinstance(i, dict)
+                    and (i.get("priority") == "high" or i.get("is_high_priority") is True)
+                    for i in items
+                ):
+                    has_hp = True
+                    break
+            if has_hp:
+                high_priority_count += 1
+
+    rooms = db.query(models.Room).all()
+    room_summary = {
+        "available": 0,
+        "occupied": 0,
+        "cleaning": 0,
+        "maintenance": 0,
+    }
+    for room in rooms:
+        st = room.status.value if hasattr(room.status, "value") else str(room.status)
+        if st in room_summary:
+            room_summary[st] += 1
+        elif st in ("ready", "available"):
+            room_summary["available"] += 1
+        elif st in ("dirty", "cleaning", "inspection_pending"):
+            room_summary["cleaning"] += 1
+        elif st in ("maintenance", "out_of_service"):
+            room_summary["maintenance"] += 1
+
+    return {
+        "upcoming_arrivals": upcoming_count,
+        "in_house_guests": in_house_count,
+        "departures": departures_count,
+        "high_priority_guests": high_priority_count,
+        "room_summary": room_summary,
+    }

@@ -11,7 +11,7 @@ entities from Section 4 of your brief — don't redesign what's here.
 
 import enum
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import JSON, Boolean, Column, Date, DateTime, Enum, ForeignKey, Numeric, String
 from sqlalchemy.orm import relationship
@@ -25,18 +25,18 @@ def gen_uuid() -> str:
 
 def utcnow() -> datetime:
     """datetime.utcnow() is deprecated (naive, silently non-UTC-labeled) — use this
-    timezone-aware replacement for all "now" defaults in this module."""
-    return datetime.now(UTC)
+    timezone-aware helper across models and factory defaults instead."""
+    return datetime.now(timezone.utc)
 
 
-class ReservationStatus(enum.StrEnum):
+class ReservationStatus(str, enum.Enum):
     confirmed = "confirmed"
     checked_in = "checked_in"
     checked_out = "checked_out"
     cancelled = "cancelled"
 
 
-class FolioStatus(enum.StrEnum):
+class FolioStatus(str, enum.Enum):
     open = "open"
     settled = "settled"
     disputed = "disputed"
@@ -135,7 +135,7 @@ class Order(Base):
     placed_at = Column(DateTime, default=utcnow, nullable=False)
 
 
-class AmenityCategory(enum.StrEnum):
+class AmenityCategory(str, enum.Enum):
     """Amenity categories supported by the guest-preference matching engine (Story 4)."""
 
     dining = "dining"
@@ -160,7 +160,7 @@ class Amenity(Base):
     property = relationship("Property")
 
 
-class RecommendationReviewStatus(enum.StrEnum):
+class RecommendationReviewStatus(str, enum.Enum):
     pending = "pending"
     approved = "approved"
     rejected = "rejected"
@@ -185,7 +185,7 @@ class RecommendationReview(Base):
     amenity = relationship("Amenity")
 
 
-class RoomStatus(enum.StrEnum):
+class RoomStatus(str, enum.Enum):
     available = "available"
     ready = "ready"
     occupied = "occupied"

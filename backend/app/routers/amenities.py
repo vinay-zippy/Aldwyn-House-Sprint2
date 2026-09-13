@@ -8,6 +8,12 @@ from app.matching import generate_recommendations
 from app.mongo import get_preferences_collection
 
 router = APIRouter(prefix="/api/v1/guests", tags=["amenities"])
+catalogue_router = APIRouter(prefix="/api/v1/amenities", tags=["amenities"])
+
+
+@catalogue_router.get("", response_model=list[schemas.AmenityOut])
+def list_amenities(property_id: str | None = None, db: Session = Depends(get_db)):
+    return crud.list_amenities(db, property_id=property_id)
 
 
 def _matching_preferences(preferences_document: dict) -> dict[str, list[str]]:
