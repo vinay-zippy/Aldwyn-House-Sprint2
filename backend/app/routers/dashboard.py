@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 from app import crud, schemas
 from app.database import get_db
 from app.mongo import get_preferences_collection
+from app.auth import UserRole, require_roles
 
-router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"])
+router = APIRouter(prefix="/api/v1/dashboard", tags=["dashboard"], dependencies=[Depends(require_roles(UserRole.FRONT_DESK))])
 
 
 @router.get("/summary", response_model=schemas.DashboardSummaryOut)

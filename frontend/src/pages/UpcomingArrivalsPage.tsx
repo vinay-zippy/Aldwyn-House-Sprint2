@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Filter, Calendar } from 'lucide-react'
-import { getUpcomingArrivals } from '../services/api'
+import { getUpcomingArrivals, updateReservationStatus } from '../services/api'
 import type { UpcomingArrival } from '../types/reservation'
 import { LoadingState } from '../components/common/LoadingState'
 import { ErrorState } from '../components/common/ErrorState'
@@ -14,6 +14,7 @@ export const UpcomingArrivalsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
 
   const navigate = useNavigate()
 
@@ -48,6 +49,18 @@ export const UpcomingArrivalsPage: React.FC = () => {
 
     return matchesSearch && matchesStatus
   })
+
+  const updateStatus = async (reservationId: string, status: string) => {
+    setUpdatingId(reservationId)
+    try {
+      await updateReservationStatus(reservationId, status)
+      await loadArrivals()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unable to update reservation status.')
+    } finally {
+      setUpdatingId(null)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -117,6 +130,7 @@ export const UpcomingArrivalsPage: React.FC = () => {
                   <th className="py-3 px-4">Departure Date</th>
                   <th className="py-3 px-4">Room</th>
                   <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4">Times</th>
                   <th className="py-3 px-4 text-right">Action</th>
                 </tr>
               </thead>
@@ -143,6 +157,7 @@ export const UpcomingArrivalsPage: React.FC = () => {
                     </td>
                     <td className="py-3.5 px-4">{arrival.check_in}</td>
                     <td className="py-3.5 px-4">{arrival.check_out}</td>
+                    <td className="py-3.5 px-4">{arrival.check_in_time?.slice(0, 5) ?? '14:00'} / {arrival.check_out_time?.slice(0, 5) ?? '11:00'}</td>
                     <td className="py-3.5 px-4 font-medium">
                       {arrival.room_number ? (
                         <span className="px-2 py-0.5 rounded-sm bg-slate-100 text-slate-700 border border-slate-200 font-mono">
@@ -156,6 +171,8 @@ export const UpcomingArrivalsPage: React.FC = () => {
                       <StatusBadge status={arrival.status} />
                     </td>
                     <td className="py-3.5 px-4 text-right">
+                      {arrival.status === 'confirmed' && <button type="button" disabled={updatingId === arrival.id} onClick={() => void updateStatus(arrival.id, 'checked_in')} className="mr-2 rounded-lg bg-emerald-50 px-2 py-1.5 text-xs font-semibold text-emerald-800">Check in</button>}
+                      {arrival.status === 'checked_in' && <button type="button" disabled={updatingId === arrival.id} onClick={() => void updateStatus(arrival.id, 'checked_out')} className="mr-2 rounded-lg bg-slate-100 px-2 py-1.5 text-xs font-semibold text-slate-700">Check out</button>}
                       <button
                         type="button"
                         onClick={() => navigate(`/guests/${arrival.guest_id}`)}

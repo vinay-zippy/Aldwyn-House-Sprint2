@@ -9,9 +9,11 @@ docker compose exec backend python -m app.seed
 from datetime import date, timedelta
 
 from app import models
+from app.config import settings
 from app.database import SessionLocal
 from app.models import utcnow
 from app.mongo import get_preferences_collection
+from app.auth import UserRole, hash_password
 
 
 def seed_rooms() -> None:
@@ -81,6 +83,22 @@ def seed_if_empty() -> None:
     db = SessionLocal()
 
     try:
+        if db.query(models.User).count() == 0:
+            db.add_all(
+                [
+                    models.User(
+                        username="frontdesk@example.com",
+                        password_hash=hash_password(settings.demo_front_desk_password),
+                        role=UserRole.FRONT_DESK.value,
+                    ),
+                    models.User(
+                        username="housekeeping@example.com",
+                        password_hash=hash_password(settings.demo_housekeeping_password),
+                        role=UserRole.HOUSEKEEPING.value,
+                    ),
+                ]
+            )
+            db.commit()
         if db.query(models.Guest).count() > 0:
             property_ = db.query(models.Property).first()
             if property_:
@@ -111,6 +129,7 @@ def seed_if_empty() -> None:
         # Guests
         guest_data = [
             {
+                "guest_code": "G-0001",
                 "name": "Jamie Rivera",
                 "email": "jamie.rivera@example.com",
                 "phone": "+1-555-0100",
@@ -132,6 +151,7 @@ def seed_if_empty() -> None:
                 },
             },
             {
+                "guest_code": "G-0002",
                 "name": "Emma Wilson",
                 "email": "emma.wilson@example.com",
                 "phone": "+1-555-0101",
@@ -147,6 +167,7 @@ def seed_if_empty() -> None:
                 },
             },
             {
+                "guest_code": "G-0003",
                 "name": "Daniel Smith",
                 "email": "daniel.smith@example.com",
                 "phone": "+1-555-0102",
@@ -167,6 +188,7 @@ def seed_if_empty() -> None:
                 },
             },
             {
+                "guest_code": "G-0004",
                 "name": "Sophia Brown",
                 "email": "sophia.brown@example.com",
                 "phone": "+1-555-0103",
@@ -182,6 +204,7 @@ def seed_if_empty() -> None:
         for index, data in enumerate(guest_data):
 
             guest = models.Guest(
+                guest_code=data["guest_code"],
                 name=data["name"],
                 email=data["email"],
                 phone=data["phone"],

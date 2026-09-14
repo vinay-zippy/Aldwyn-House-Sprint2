@@ -11,9 +11,9 @@ entities from Section 4 of your brief — don't redesign what's here.
 
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, time, timezone
 
-from sqlalchemy import JSON, Boolean, Column, Date, DateTime, Enum, ForeignKey, Numeric, String
+from sqlalchemy import JSON, Boolean, Column, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String, Time
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -46,9 +46,13 @@ class Guest(Base):
     __tablename__ = "guests"
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
+    guest_code = Column(String(10), nullable=False, unique=True, index=True)
     name = Column(String, nullable=False)
     email = Column(String, nullable=False, unique=True, index=True)
     phone = Column(String, nullable=True)
+    id_type = Column(String, nullable=True)
+    id_number = Column(String, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
     loyalty_tier = Column(String, nullable=False, default="standard")
     created_at = Column(DateTime, default=utcnow, nullable=False)
 
@@ -91,7 +95,10 @@ class Reservation(Base):
     rate_plan_id = Column(String(36), ForeignKey("rate_plans.id"), nullable=True)
     check_in = Column(Date, nullable=False)
     check_out = Column(Date, nullable=False)
+    check_in_time = Column(Time, nullable=True)
+    check_out_time = Column(Time, nullable=True)
     room_number = Column(String, nullable=True)
+    number_of_guests = Column(Integer, nullable=False, default=1)
     status = Column(Enum(ReservationStatus), nullable=False, default=ReservationStatus.confirmed)
 
     guest = relationship("Guest", back_populates="reservations")
@@ -207,3 +214,14 @@ class Room(Base):
     room_type = Column(String, nullable=False, default="standard")
     created_at = Column(DateTime, default=utcnow, nullable=False)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    username = Column(String, nullable=False, unique=True, index=True)
+    password_hash = Column(String, nullable=False)
+    role = Column(Enum("FRONT_DESK", "HOUSEKEEPING", name="userrole"), nullable=False)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, default=utcnow, nullable=False)

@@ -10,7 +10,9 @@ import {
   AlertTriangle,
 } from 'lucide-react'
 import { getDashboardSummary, getUpcomingArrivals } from '../services/api'
+import { getGuests } from '../services/api'
 import type { DashboardSummary } from '../types/dashboard'
+import type { Guest } from '../types/guest'
 import type { UpcomingArrival } from '../types/reservation'
 import { LoadingState } from '../components/common/LoadingState'
 import { ErrorState } from '../components/common/ErrorState'
@@ -19,6 +21,7 @@ import { StatusBadge } from '../components/common/StatusBadge'
 export const DashboardPage: React.FC = () => {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [arrivals, setArrivals] = useState<UpcomingArrival[]>([])
+  const [guests, setGuests] = useState<Guest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
@@ -27,12 +30,14 @@ export const DashboardPage: React.FC = () => {
     try {
       setLoading(true)
       setError(null)
-      const [sumData, arrData] = await Promise.all([
+      const [sumData, arrData, guestData] = await Promise.all([
         getDashboardSummary(),
         getUpcomingArrivals(),
+        getGuests(),
       ])
       setSummary(sumData)
       setArrivals(arrData)
+      setGuests(guestData)
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : 'Unable to connect to backend',
@@ -128,6 +133,46 @@ export const DashboardPage: React.FC = () => {
           <div className="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
             <Star className="w-5 h-5" />
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Guest Directory</h2>
+            <p className="text-xs text-slate-500">Guests currently stored in the database</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/walk-in-guest')}
+            className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer"
+          >
+            Add walk-in guest
+          </button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs text-slate-700">
+            <thead className="bg-slate-50 border-y border-slate-200 text-slate-500 font-medium">
+              <tr>
+                <th className="py-2.5 px-3">Guest Code</th>
+                <th className="py-2.5 px-3">Guest</th>
+                <th className="py-2.5 px-3">Email</th>
+                <th className="py-2.5 px-3">Loyalty Tier</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {guests.map((guest) => (
+                <tr key={guest.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3 px-3 font-mono font-semibold text-emerald-700">
+                    {guest.guest_code}
+                  </td>
+                  <td className="py-3 px-3 font-medium text-slate-900">{guest.name}</td>
+                  <td className="py-3 px-3">{guest.email}</td>
+                  <td className="py-3 px-3 capitalize">{guest.loyalty_tier}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 

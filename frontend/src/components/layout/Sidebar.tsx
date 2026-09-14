@@ -9,7 +9,10 @@ import {
   Bot,
   Settings,
   X,
+  UserPlus,
 } from 'lucide-react'
+import { getRole } from '../../services/auth'
+import { getUsername } from '../../services/auth'
 
 interface SidebarProps {
   mobileOpen?: boolean
@@ -24,11 +27,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { label: 'Upcoming Arrivals', path: '/arrivals', icon: Users },
     { label: 'Guest 360', path: '/guests', icon: UserCheck },
+    { label: 'Walk-in Guest', path: '/walk-in-guest', icon: UserPlus },
     { label: 'Rooms', path: '/rooms', icon: BedDouble },
     { label: 'Amenities', path: '/amenities', icon: Sparkles },
     { label: 'AI Assistance', path: '/ai-assistance', icon: Bot },
     { label: 'Settings', path: '/settings', icon: Settings },
   ]
+  const visibleItems = getRole() === 'HOUSEKEEPING'
+    ? navItems.filter((item) => item.path === '/rooms')
+    : navItems
 
   const navContent = (
     <div className="flex flex-col h-full bg-slate-900 text-slate-300 w-64 border-r border-slate-800 select-none">
@@ -58,7 +65,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Navigation */}
       <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-        {navItems.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = item.icon
           return (
             <NavLink
@@ -84,13 +91,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-4 border-t border-slate-800/80 bg-slate-950/40">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 rounded-full bg-slate-700 text-slate-200 flex items-center justify-center text-xs font-semibold">
-            FD
+            {(getUsername() ?? 'ST').slice(0, 2).toUpperCase()}
           </div>
           <div className="overflow-hidden">
             <p className="text-xs font-medium text-slate-200 truncate">
-              Front Desk Staff
+              {getRole() === 'HOUSEKEEPING' ? 'Housekeeping Staff' : 'Front Desk Staff'}
             </p>
-            <p className="text-[10px] text-slate-400">Guest Operations</p>
+            <p className="text-[10px] text-slate-400">{getUsername() ?? 'Staff workspace'}</p>
           </div>
         </div>
       </div>

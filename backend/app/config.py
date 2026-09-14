@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # Set to true only by the test suite (see tests/conftest.py) to skip touching
     # the real Postgres/Mongo services during startup.
     testing: bool = False
+    auth_secret: str = "change-this-development-secret"
+    demo_front_desk_password: str = "FrontDesk123!"
+    demo_housekeeping_password: str = "Housekeeping123!"
 
 
 settings = Settings()

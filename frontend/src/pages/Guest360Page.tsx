@@ -9,7 +9,7 @@ import {
   Sparkles,
   Search,
 } from 'lucide-react'
-import { getGuest, getGuestPreferences, getGuests, getUpcomingArrivals } from '../services/api'
+import { deleteGuest, getGuest, getGuestPreferences, getGuests, getUpcomingArrivals, updateGuest } from '../services/api'
 import type { GuestDetail, PreferenceItem, PastRequest, Guest } from '../types/guest'
 import type { UpcomingArrival } from '../types/reservation'
 import { LoadingState } from '../components/common/LoadingState'
@@ -27,6 +27,8 @@ export const Guest360Page: React.FC = () => {
   const [selectedGuestId, setSelectedGuestId] = useState<string>(guestId ?? '')
   const [loading, setLoading] = useState(Boolean(guestId))
   const [error, setError] = useState<string | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     // Load guest list for selector dropdown
@@ -77,6 +79,29 @@ export const Guest360Page: React.FC = () => {
     if (val) {
       navigate(`/guests/${val}`)
     }
+  }
+
+  const saveGuest = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!guest) return
+    const form = new FormData(event.currentTarget)
+    setSaving(true)
+    try {
+      const updated = await updateGuest(guest.id, {
+        name: form.get('name'), email: form.get('email'), phone: form.get('phone') || null,
+        loyalty_tier: form.get('loyalty_tier'), id_type: form.get('id_type') || null, id_number: form.get('id_number') || null,
+      })
+      setGuest((current) => current ? { ...current, ...updated, preferences: current.preferences } : current)
+      setEditing(false)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unable to update guest.')
+    } finally { setSaving(false) }
+  }
+
+  const removeGuest = async () => {
+    if (!guest || !window.confirm('Deactivate this guest record? Reservation history will be preserved.')) return
+    await deleteGuest(guest.id)
+    navigate('/guests')
   }
 
   // Check if guest has high priority preferences
@@ -164,7 +189,7 @@ export const Guest360Page: React.FC = () => {
               </div>
             </div>
 
-            {/* AI Assistant Quick Action */}
+            <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => navigate(`/ai-assistance?guestId=${guest.id}`)}
@@ -173,7 +198,12 @@ export const Guest360Page: React.FC = () => {
               <Sparkles className="w-4 h-4 text-emerald-600" />
               <span>✦ View AI Experience Matches</span>
             </button>
+            <button type="button" onClick={() => setEditing((open) => !open)} className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700">{editing ? 'Cancel edit' : 'Edit guest'}</button>
+            <button type="button" onClick={() => void removeGuest()} className="rounded-lg border border-rose-200 px-4 py-2 text-xs font-semibold text-rose-700">Delete guest</button>
+            </div>
           </div>
+
+          {editing && <form onSubmit={saveGuest} className="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-5 md:grid-cols-2"><input name="name" defaultValue={guest.name} required className="rounded-lg border border-slate-200 px-3 py-2 text-sm" /><input name="email" type="email" defaultValue={guest.email} required className="rounded-lg border border-slate-200 px-3 py-2 text-sm" /><input name="phone" defaultValue={guest.phone ?? ''} className="rounded-lg border border-slate-200 px-3 py-2 text-sm" /><input name="id_type" defaultValue={guest.id_type ?? ''} placeholder="ID type" className="rounded-lg border border-slate-200 px-3 py-2 text-sm" /><input name="id_number" defaultValue={guest.id_number ?? ''} placeholder="ID number" className="rounded-lg border border-slate-200 px-3 py-2 text-sm" /><select name="loyalty_tier" defaultValue={guest.loyalty_tier} className="rounded-lg border border-slate-200 px-3 py-2 text-sm"><option>standard</option><option>silver</option><option>gold</option><option>platinum</option></select><button disabled={saving} className="rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white">{saving ? 'Saving...' : 'Save guest'}</button></form>}
 
           {/* High Priority Banner */}
           {isHighPriority && (

@@ -5,6 +5,8 @@ export interface Reservation {
   rate_plan_id: string | null
   check_in: string
   check_out: string
+  check_in_time?: string | null
+  check_out_time?: string | null
   room_number?: string | null
   status: string
 }
@@ -15,6 +17,8 @@ export interface UpcomingArrival {
   guest_name: string
   check_in: string
   check_out: string
+  check_in_time?: string | null
+  check_out_time?: string | null
   room_number: string | null
   status: string
   is_high_priority?: boolean

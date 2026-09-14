@@ -3,6 +3,7 @@
 
 from datetime import date, datetime, timezone
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app import models, schemas
@@ -15,7 +16,8 @@ def list_reservations(
     date_from: date | None = None,
     date_to: date | None = None,
 ):
-    query = db.query(models.Reservation)
+    query = db.query(models.Reservation).join(models.Guest)
+    query = query.filter(models.Guest.is_active.is_(True))
     if property_id:
         query = query.filter(models.Reservation.property_id == property_id)
     if status:
@@ -52,6 +54,12 @@ def get_reservation(db: Session, reservation_id: str) -> models.Reservation | No
 
 
 def create_reservation(db: Session, payload: schemas.ReservationCreate) -> models.Reservation:
+    if payload.check_out <= payload.check_in:
+        raise ValueError("check_out must be after check_in")
+    if payload.room_number and not room_is_available(
+        db, payload.room_number, payload.check_in, payload.check_out
+    ):
+        raise ValueError(f"Room {payload.room_number} is no longer available. Please select another room.")
     reservation = models.Reservation(**payload.model_dump())
     db.add(reservation)
     db.commit()
@@ -59,8 +67,143 @@ def create_reservation(db: Session, payload: schemas.ReservationCreate) -> model
     return reservation
 
 
+def update_reservation_status(
+    db: Session, reservation_id: str, status: models.ReservationStatus
+) -> models.Reservation | None:
+    reservation = get_reservation(db, reservation_id)
+    if reservation is None:
+        return None
+    reservation.status = status
+    if reservation.room_number and status == models.ReservationStatus.checked_in:
+        room = get_room(db, reservation.room_number)
+        if room:
+            room.status = models.RoomStatus.occupied
+    elif reservation.room_number and status in (
+        models.ReservationStatus.checked_out,
+        models.ReservationStatus.cancelled,
+    ):
+        room = get_room(db, reservation.room_number)
+        if room and room.status == models.RoomStatus.occupied:
+            room.status = models.RoomStatus.dirty
+    db.commit()
+    db.refresh(reservation)
+    return reservation
+
+
 def get_guest(db: Session, guest_id: str) -> models.Guest | None:
-    return db.query(models.Guest).filter(models.Guest.id == guest_id).first()
+    return db.query(models.Guest).filter(models.Guest.id == guest_id, models.Guest.is_active.is_(True)).first()
+
+
+def create_guest(db: Session, payload: schemas.GuestCreate) -> models.Guest:
+    guest_number = db.query(models.Guest).count() + 1
+    while db.query(models.Guest).filter(
+        models.Guest.guest_code == f"G-{guest_number:04d}"
+    ).first():
+        guest_number += 1
+
+    guest = models.Guest(guest_code=f"G-{guest_number:04d}", **payload.model_dump())
+    db.add(guest)
+    db.commit()
+    db.refresh(guest)
+    return guest
+
+
+def find_matching_guest(db: Session, name: str, email: str, phone: str):
+    return (
+        db.query(models.Guest)
+        .filter(
+            models.Guest.name.ilike(name.strip()),
+            models.Guest.email.ilike(email.strip()),
+            models.Guest.phone == phone.strip(),
+        )
+        .first()
+    )
+
+
+def list_guest_reservations(db: Session, guest_id: str):
+    return (
+        db.query(models.Reservation)
+        .filter(models.Reservation.guest_id == guest_id)
+        .order_by(models.Reservation.check_in.desc())
+        .all()
+    )
+
+
+def get_room(db: Session, room_number: str):
+    return db.query(models.Room).filter(models.Room.room_number == room_number).first()
+
+
+def room_is_available(db: Session, room_number: str, check_in: date, check_out: date) -> bool:
+    room = get_room(db, room_number)
+    if room is None or room.status not in (models.RoomStatus.available, models.RoomStatus.ready):
+        return False
+    conflict = (
+        db.query(models.Reservation)
+        .filter(
+            models.Reservation.room_number == room_number,
+            models.Reservation.status != models.ReservationStatus.cancelled,
+            models.Reservation.check_in < check_out,
+            models.Reservation.check_out > check_in,
+        )
+        .first()
+    )
+    return conflict is None
+
+
+def create_walk_in(
+    db: Session,
+    payload: schemas.WalkInCreate,
+    prefs_collection=None,
+) -> tuple[models.Guest, models.Reservation, bool]:
+    if payload.check_out <= payload.check_in:
+        raise ValueError("check_out must be after check_in")
+    room = get_room(db, payload.room_number)
+    if room is None:
+        raise ValueError(f"Room {payload.room_number} does not exist")
+    if not room_is_available(db, payload.room_number, payload.check_in, payload.check_out):
+        raise ValueError(f"Room {payload.room_number} is no longer available. Please select another room.")
+
+    guest = db.query(models.Guest).filter(models.Guest.id == payload.guest_id).first() if payload.guest_id else None
+    returning_guest = guest is not None
+    if guest is None:
+        guest = find_matching_guest(db, payload.name, payload.email, payload.phone)
+        returning_guest = guest is not None
+    if guest is None:
+        guest = create_guest(
+            db,
+            schemas.GuestCreate(
+                name=payload.name,
+                email=payload.email,
+                phone=payload.phone,
+                loyalty_tier=payload.loyalty_tier,
+                id_type=payload.id_type,
+                id_number=payload.id_number,
+            ),
+        )
+    reservation = models.Reservation(
+        guest_id=guest.id,
+        property_id=db.query(models.Property.id).first()[0],
+        check_in=payload.check_in,
+        check_out=payload.check_out,
+        room_number=payload.room_number,
+        number_of_guests=payload.number_of_guests,
+        status=models.ReservationStatus.confirmed,
+    )
+    db.add(reservation)
+    db.commit()
+    db.refresh(reservation)
+    if prefs_collection is not None and any((payload.dietary, payload.room_preferences, payload.notes)):
+        prefs_collection.update_one(
+            {"guest_id": guest.id},
+            {"$set": {
+                "guest_id": guest.id,
+                "dietary": payload.dietary,
+                "room_preferences": payload.room_preferences,
+                "notes": payload.notes,
+            }},
+            upsert=True,
+        )
+    return guest, reservation, returning_guest
 
 
 def get_concierge_requests(db: Session, guest_id: str) -> list[models.ConciergeRequest]:
@@ -142,7 +285,44 @@ def save_recommendation_review(
 
 
 def list_guests(db: Session) -> list[models.Guest]:
-    return db.query(models.Guest).order_by(models.Guest.name).all()
+    return db.query(models.Guest).filter(models.Guest.is_active.is_(True)).order_by(models.Guest.name).all()
+
+
+def search_guests(db: Session, query: str) -> list[models.Guest]:
+    value = f"%{query.strip()}%"
+    return (
+        db.query(models.Guest)
+        .filter(
+            models.Guest.is_active.is_(True),
+            (models.Guest.guest_code.ilike(value)
+             | models.Guest.name.ilike(value)
+             | models.Guest.email.ilike(value)
+             | models.Guest.phone.ilike(value)),
+        )
+        .order_by(models.Guest.name)
+        .limit(20)
+        .all()
+    )
+
+
+def update_guest(db: Session, guest_id: str, payload: schemas.GuestUpdate) -> models.Guest | None:
+    guest = get_guest(db, guest_id)
+    if guest is None:
+        return None
+    for field, value in payload.model_dump().items():
+        setattr(guest, field, value)
+    db.commit()
+    db.refresh(guest)
+    return guest
+
+
+def deactivate_guest(db: Session, guest_id: str) -> bool:
+    guest = get_guest(db, guest_id)
+    if guest is None:
+        return False
+    guest.is_active = False
+    db.commit()
+    return True
 
 
 def list_rooms(db: Session, floor: str | None = None) -> list[models.Room]:
@@ -170,7 +350,10 @@ def get_dashboard_summary(db: Session, prefs_collection=None) -> dict:
     departures_count = (
         db.query(models.Reservation)
         .filter(
-            models.Reservation.check_out == today,
+            or_(
+                models.Reservation.check_out == today,
+                models.Reservation.status == models.ReservationStatus.checked_out,
+            ),
             models.Reservation.status != models.ReservationStatus.cancelled,
         )
         .count()

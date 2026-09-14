@@ -6,9 +6,10 @@ from app import crud, models, schemas
 from app.database import get_db
 from app.matching import generate_recommendations
 from app.mongo import get_preferences_collection
+from app.auth import UserRole, require_roles
 
-router = APIRouter(prefix="/api/v1/guests", tags=["amenities"])
-catalogue_router = APIRouter(prefix="/api/v1/amenities", tags=["amenities"])
+router = APIRouter(prefix="/api/v1/guests", tags=["amenities"], dependencies=[Depends(require_roles(UserRole.FRONT_DESK))])
+catalogue_router = APIRouter(prefix="/api/v1/amenities", tags=["amenities"], dependencies=[Depends(require_roles(UserRole.FRONT_DESK))])
 
 
 @catalogue_router.get("", response_model=list[schemas.AmenityOut])

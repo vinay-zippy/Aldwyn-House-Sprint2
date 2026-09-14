@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session
 
 from app import crud, schemas
 from app.database import get_db
+from app.auth import UserRole, require_roles
 
-router = APIRouter(prefix="/api/v1/folios", tags=["folios"])
+router = APIRouter(prefix="/api/v1/folios", tags=["folios"], dependencies=[Depends(require_roles(UserRole.FRONT_DESK))])
 
 
 @router.get("/{folio_id}", response_model=schemas.FolioOut)

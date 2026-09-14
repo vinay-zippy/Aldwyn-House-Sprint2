@@ -1,6 +1,6 @@
 """Pydantic request/response schemas mirroring the Core Data Model and API contract."""
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Literal
 
@@ -21,9 +21,12 @@ class GuestOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
+    guest_code: str
     name: str
     email: EmailStr
     phone: str | None = None
+    id_type: str | None = None
+    id_number: str | None = None
     loyalty_tier: str
     created_at: datetime
 
@@ -53,6 +56,66 @@ class GuestPreferenceResponse(BaseModel):
 
 class GuestDetail(GuestOut):
     preferences: GuestPreferences
+
+
+class GuestCreate(BaseModel):
+    name: str
+    email: EmailStr
+    phone: str | None = None
+    loyalty_tier: str = "standard"
+    id_type: str | None = None
+    id_number: str | None = None
+
+
+class GuestUpdate(BaseModel):
+    name: str
+    email: EmailStr
+    phone: str | None = None
+    loyalty_tier: str = "standard"
+    id_type: str | None = None
+    id_number: str | None = None
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    role: str
+    username: str
+
+
+class GuestMatch(BaseModel):
+    guest: GuestOut
+    previous_stays: list["ReservationOut"]
+
+
+class WalkInCreate(BaseModel):
+    guest_id: str | None = None
+    name: str
+    email: EmailStr
+    phone: str
+    id_type: str
+    id_number: str
+    check_in: date
+    check_out: date
+    check_in_time: time = time(14, 0)
+    check_out_time: time = time(11, 0)
+    number_of_guests: int = 1
+    room_number: str
+    loyalty_tier: str = "standard"
+    dietary: list[dict] = []
+    room_preferences: list[dict] = []
+    notes: list[dict] = []
+
+
+class WalkInOut(BaseModel):
+    guest: GuestOut
+    reservation: "ReservationOut"
+    returning_guest: bool
 
 
 # ---- Property / RatePlan ----
@@ -89,6 +152,10 @@ class ReservationCreate(BaseModel):
     rate_plan_id: str | None = None
     check_in: date
     check_out: date
+    room_number: str | None = None
+    number_of_guests: int = 1
+    check_in_time: time | None = None
+    check_out_time: time | None = None
     status: ReservationStatus = ReservationStatus.confirmed
 
 
@@ -101,6 +168,8 @@ class ReservationOut(BaseModel):
     rate_plan_id: str | None = None
     check_in: date
     check_out: date
+    check_in_time: time | None = None
+    check_out_time: time | None = None
     room_number: str | None
     status: ReservationStatus
 
@@ -112,6 +181,8 @@ class UpcomingArrivalOut(BaseModel):
     guest_name: str
     check_in: date
     check_out: date
+    check_in_time: time | None = None
+    check_out_time: time | None = None
     room_number: str | None
     status: ReservationStatus
 
@@ -128,6 +199,10 @@ class FolioOut(BaseModel):
 class ReservationDetail(ReservationOut):
     guest: GuestOut
     folio: FolioOut | None = None
+
+
+class ReservationStatusUpdate(BaseModel):
+    status: ReservationStatus
 
 
 # ---- Availability ----

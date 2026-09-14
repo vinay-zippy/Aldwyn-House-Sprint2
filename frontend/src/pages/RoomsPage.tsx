@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react'
 import { BedDouble, CheckCircle2, Sparkles, Wrench } from 'lucide-react'
-import { getRooms } from '../services/api'
+import { getRooms, updateRoomStatus } from '../services/api'
 import type { Room } from '../types/room'
 import { LoadingState } from '../components/common/LoadingState'
 import { ErrorState } from '../components/common/ErrorState'
 import { StatusBadge } from '../components/common/StatusBadge'
+import { getRole } from '../services/auth'
 
 export const RoomsPage: React.FC = () => {
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedFloor, setSelectedFloor] = useState<string>('all')
+  const [updatingRoom, setUpdatingRoom] = useState<string | null>(null)
 
   const loadRooms = async () => {
     try {
@@ -30,6 +32,18 @@ export const RoomsPage: React.FC = () => {
   useEffect(() => {
     void loadRooms()
   }, [])
+
+  const handleStatusChange = async (roomNumber: string, status: string) => {
+    try {
+      setUpdatingRoom(roomNumber)
+      const updated = await updateRoomStatus(roomNumber, status)
+      setRooms((current) => current.map((room) => room.room_number === roomNumber ? updated : room))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Unable to update room status.')
+    } finally {
+      setUpdatingRoom(null)
+    }
+  }
 
   // Calculate statistics
   const availableCount = rooms.filter(
@@ -193,6 +207,19 @@ export const RoomsPage: React.FC = () => {
                         {room.room_type}
                       </span>
                       <StatusBadge status={room.status} type="room" />
+                      <select
+                        value={getRole() === 'HOUSEKEEPING' && (room.status === 'occupied' || room.status === 'available') ? '' : room.status}
+                        disabled={updatingRoom === room.room_number}
+                        onChange={(event) => void handleStatusChange(room.room_number, event.target.value)}
+                        className="mt-2 w-full rounded border border-slate-200 bg-white px-1 py-1 text-[10px]"
+                        aria-label={`Update room ${room.room_number} status`}
+                      >
+                        {getRole() === 'HOUSEKEEPING' && (room.status === 'occupied' || room.status === 'available') && <option value="" disabled>Current: {room.status}</option>}
+                        <option value="ready">Cleaned / Ready</option>
+                        <option value="dirty">Unclean</option>
+                        <option value="maintenance">Maintenance</option>
+                        {getRole() === 'FRONT_DESK' && <><option value="available">Available</option><option value="occupied">Occupied</option></>}
+                      </select>
                     </div>
                   ))}
                 </div>

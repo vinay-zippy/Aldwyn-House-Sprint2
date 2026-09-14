@@ -5,6 +5,20 @@ from app.mongo import get_preferences_collection
 from tests.factories import make_concierge_request, make_guest, make_property_guest_plan
 
 
+def test_create_guest_generates_sequential_guest_code(client):
+    response = client.post(
+        "/api/v1/guests",
+        json={"name": "Walk-in Guest", "email": "walkin@example.com", "phone": "555-0100"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["guest_code"] == "G-0001"
+
+    guests = client.get("/api/v1/guests")
+    assert guests.status_code == 200
+    assert guests.json()[0]["guest_code"] == "G-0001"
+
+
 def test_guest_detail_with_no_preferences_saved(client, db_session):
     _property, guest, _rate_plan = make_property_guest_plan(db_session)
     resp = client.get(f"/api/v1/guests/{guest.id}")

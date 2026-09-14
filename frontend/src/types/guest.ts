@@ -17,9 +17,12 @@ export interface PastRequest {
 
 export interface Guest {
   id: string
+  guest_code: string
   name: string
   email: string
   phone: string | null
+  id_type?: string | null
+  id_number?: string | null
   loyalty_tier: string
   created_at: string
   preferences?: GuestPreferences
