@@ -1,20 +1,28 @@
 import React, { useEffect, useState } from 'react'
-import { CheckCircle2, UserPlus } from 'lucide-react'
+import { CheckCircle2, UserPlus, X } from 'lucide-react'
 import { createWalkIn, findGuestMatch, getAvailableRooms } from '../services/api'
 import type { Guest } from '../types/guest'
 import type { Room } from '../types/room'
 
 type Match = { guest: Guest; previous_stays: { check_in: string; check_out: string; room_number?: string | null; status: string }[] }
+type RegistrationResult = { guestName: string; guestCode: string; reservationId: string }
 const today = new Date().toISOString().slice(0, 10)
+const SUCCESS_TOAST_MS = 7000
 
 export const WalkInGuestPage: React.FC = () => {
   const [form, setForm] = useState({ name: '', email: '', phone: '', id_type: 'passport', id_number: '', check_in: today, check_in_time: '14:00', check_out: '', check_out_time: '11:00', number_of_guests: '1', room_number: '', dietary: '', room_preferences: '', notes: '' })
   const [rooms, setRooms] = useState<Room[]>([])
   const [match, setMatch] = useState<Match | null>(null)
-  const [result, setResult] = useState<string | null>(null)
+  const [result, setResult] = useState<RegistrationResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const setField = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }))
+
+  useEffect(() => {
+    if (!result) return
+    const dismissTimer = setTimeout(() => setResult(null), SUCCESS_TOAST_MS)
+    return () => clearTimeout(dismissTimer)
+  }, [result])
 
   useEffect(() => {
     if (!form.check_in || !form.check_out || form.check_out <= form.check_in) return
@@ -33,14 +41,48 @@ export const WalkInGuestPage: React.FC = () => {
         ...(match ? { guest_id: match.guest.id } : {}), name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(), id_type: form.id_type, id_number: form.id_number.trim(), check_in: form.check_in, check_in_time: form.check_in_time, check_out: form.check_out, check_out_time: form.check_out_time, number_of_guests: Number(form.number_of_guests), room_number: form.room_number, loyalty_tier: match?.guest.loyalty_tier ?? 'standard',
         dietary: form.dietary ? [{ value: form.dietary, priority: 'normal' }] : [], room_preferences: form.room_preferences ? [{ value: form.room_preferences, priority: 'normal' }] : [], notes: form.notes ? [{ value: form.notes, priority: 'normal' }] : [],
       })
-      setResult(`${response.guest.guest_code} registered and reservation ${response.reservation.id.slice(0, 8)} created.`)
+      setResult({ guestName: response.guest.name, guestCode: response.guest.guest_code, reservationId: response.reservation.id.slice(0, 8) })
       setForm((current) => ({ ...current, name: '', email: '', phone: '', id_number: '', room_number: '', dietary: '', room_preferences: '', notes: '' })); setMatch(null)
     } catch (requestError: unknown) { setError(requestError instanceof Error ? requestError.message : 'Unable to register walk-in guest.') } finally { setLoading(false) }
   }
 
+
   return <div className="max-w-5xl space-y-6">
+    {result && (
+      <div
+        role="status"
+        aria-live="polite"
+        className="fixed top-4 right-4 z-50 w-full max-w-sm rounded-xl border border-emerald-200 bg-white shadow-xl overflow-hidden"
+      >
+        <div className="flex items-start gap-3 p-4">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+            <CheckCircle2 className="h-4.5 w-4.5" />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-emerald-900">Guest registered successfully</p>
+            <p className="mt-0.5 text-xs text-slate-600 leading-relaxed">
+              {result.guestName} ({result.guestCode}) · Reservation {result.reservationId}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setResult(null)}
+            aria-label="Dismiss success message"
+            className="shrink-0 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors cursor-pointer"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="h-1 w-full bg-emerald-100">
+          <div
+            key={result.reservationId}
+            className="h-full bg-emerald-500"
+            style={{ animation: `toast-countdown ${SUCCESS_TOAST_MS}ms linear forwards` }}
+          />
+        </div>
+      </div>
+    )}
     <div><div className="flex items-center gap-2 text-emerald-700"><UserPlus className="h-5 w-5" /><h1 className="text-2xl font-semibold text-slate-900">Walk-in Guest Registration</h1></div><p className="mt-1 text-xs text-slate-500">Register a guest and assign a room from live availability.</p></div>
-    {result && <div className="flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs text-emerald-800"><CheckCircle2 className="h-5 w-5" />{result}</div>}
     {error && <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800">{error}</div>}
     {match && <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950"><strong>Returning Guest Found: {match.guest.guest_code} · {match.guest.name}</strong><p className="mt-1 text-xs">{match.guest.email} · {match.guest.phone}</p><p className="mt-3 text-xs font-semibold">Previous stays ({match.previous_stays.length})</p><ul className="mt-1 text-xs">{match.previous_stays.map((stay) => <li key={`${stay.check_in}-${stay.check_out}`}>{stay.check_in} to {stay.check_out} · Room {stay.room_number ?? 'unassigned'} · {stay.status}</li>)}</ul><button type="button" onClick={() => { setField('name', match.guest.name); setField('email', match.guest.email); setField('phone', match.guest.phone ?? '') }} className="mt-3 rounded-lg bg-amber-900 px-3 py-2 text-xs font-semibold text-white">Use Existing Guest</button></div>}
     <form onSubmit={submit} className="space-y-6 rounded-xl border border-slate-200/80 bg-white p-6 shadow-xs">

@@ -6,7 +6,6 @@ import {
   UserCheck,
   BedDouble,
   Sparkles,
-  Bot,
   Settings,
   X,
   UserPlus,
@@ -30,7 +29,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { label: 'Walk-in Guest', path: '/walk-in-guest', icon: UserPlus },
     { label: 'Rooms', path: '/rooms', icon: BedDouble },
     { label: 'Amenities', path: '/amenities', icon: Sparkles },
-    { label: 'AI Assistance', path: '/ai-assistance', icon: Bot },
     { label: 'Settings', path: '/settings', icon: Settings },
   ]
   const visibleItems = getRole() === 'HOUSEKEEPING'

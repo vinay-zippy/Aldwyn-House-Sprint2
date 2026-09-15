@@ -33,7 +33,7 @@ export const LoginPage: React.FC = () => {
       <form onSubmit={submit} className="w-full max-w-md space-y-6 rounded-2xl bg-white p-8 shadow-xl">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">Aldwyn House</p>
-          <h1 className="mt-2 text-2xl font-semibold text-slate-900">Front Desk Operations</h1>
+          <h1 className="mt-2 text-2xl font-semibold text-slate-900">Hotel Operations</h1>
           <p className="mt-1 text-xs text-slate-500">Sign in to continue to your workspace.</p>
         </div>
         {error && <p role="alert" className="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{error}</p>}

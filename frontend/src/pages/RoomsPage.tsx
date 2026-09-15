@@ -6,8 +6,10 @@ import { LoadingState } from '../components/common/LoadingState'
 import { ErrorState } from '../components/common/ErrorState'
 import { StatusBadge } from '../components/common/StatusBadge'
 import { getRole } from '../services/auth'
+import { useNotifications } from '../context/notificationsStore'
 
 export const RoomsPage: React.FC = () => {
+  const { recordRoomUpdate, latestRooms } = useNotifications()
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -33,11 +35,19 @@ export const RoomsPage: React.FC = () => {
     void loadRooms()
   }, [])
 
+  // The notification system already polls getRooms() on a shared interval and tracks
+  // the freshest snapshot. Prefer that snapshot once available so a status change made
+  // by the other role (Front Desk <-> Housekeeping) shows up here automatically,
+  // without running a second independent polling loop.
+  const displayRooms = latestRooms.length > 0 ? latestRooms : rooms
+
   const handleStatusChange = async (roomNumber: string, status: string) => {
+    const previousRoom = displayRooms.find((room) => room.room_number === roomNumber)
     try {
       setUpdatingRoom(roomNumber)
       const updated = await updateRoomStatus(roomNumber, status)
       setRooms((current) => current.map((room) => room.room_number === roomNumber ? updated : room))
+      recordRoomUpdate(updated, previousRoom?.status)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Unable to update room status.')
     } finally {
@@ -46,31 +56,31 @@ export const RoomsPage: React.FC = () => {
   }
 
   // Calculate statistics
-  const availableCount = rooms.filter(
+  const availableCount = displayRooms.filter(
     (r) => r.status === 'available' || r.status === 'ready',
   ).length
-  const occupiedCount = rooms.filter(
+  const occupiedCount = displayRooms.filter(
     (r) => r.status === 'occupied' || r.status === 'reserved',
   ).length
-  const cleaningCount = rooms.filter(
+  const cleaningCount = displayRooms.filter(
     (r) =>
       r.status === 'cleaning' ||
       r.status === 'dirty' ||
       r.status === 'inspection_pending',
   ).length
-  const maintenanceCount = rooms.filter(
+  const maintenanceCount = displayRooms.filter(
     (r) => r.status === 'maintenance' || r.status === 'out_of_service',
   ).length
 
   // Group rooms by floor
-  const floors = Array.from(new Set(rooms.map((r) => r.floor))).sort(
+  const floors = Array.from(new Set(displayRooms.map((r) => r.floor))).sort(
     (a, b) => Number(a) - Number(b),
   )
 
   const filteredRooms =
     selectedFloor === 'all'
-      ? rooms
-      : rooms.filter((r) => r.floor === selectedFloor)
+      ? displayRooms
+      : displayRooms.filter((r) => r.floor === selectedFloor)
 
   return (
     <div className="space-y-6">

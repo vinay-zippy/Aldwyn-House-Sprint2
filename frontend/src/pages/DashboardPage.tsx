@@ -7,7 +7,6 @@ import {
   Star,
   BedDouble,
   ArrowRight,
-  AlertTriangle,
 } from 'lucide-react'
 import { getDashboardSummary, getUpcomingArrivals } from '../services/api'
 import { getGuests } from '../services/api'
@@ -17,6 +16,13 @@ import type { UpcomingArrival } from '../types/reservation'
 import { LoadingState } from '../components/common/LoadingState'
 import { ErrorState } from '../components/common/ErrorState'
 import { StatusBadge } from '../components/common/StatusBadge'
+
+const getGreeting = (): string => {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) return 'Good Morning'
+  if (hour >= 12 && hour < 17) return 'Good Afternoon'
+  return 'Good Evening'
+}
 
 export const DashboardPage: React.FC = () => {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
@@ -70,7 +76,7 @@ export const DashboardPage: React.FC = () => {
       {/* Header Greeting */}
       <div>
         <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
-          Good morning, Front Desk
+          {getGreeting()}, Front Desk
         </h1>
         <p className="text-xs text-slate-500 mt-1">
           Here's today's guest overview at Aldwyn House.
@@ -250,47 +256,8 @@ export const DashboardPage: React.FC = () => {
           )}
         </div>
 
-        {/* Right Column: Attention / High Priority & Room Status */}
+        {/* Right Column: Room Status */}
         <div className="space-y-6">
-          {/* Attention / High Priority Section */}
-          <div className="bg-amber-50/80 border border-amber-200/90 rounded-xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center space-x-2 text-amber-800">
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
-              <span className="text-xs font-bold uppercase tracking-wider">
-                Attention / High Priority
-              </span>
-            </div>
-            {arrivals.length > 0 ? (
-              <div className="space-y-3">
-                <div className="bg-white/90 p-3.5 rounded-lg border border-amber-200/60 text-xs">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-slate-900">
-                      {arrivals[0].guest_name}
-                    </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-xs bg-amber-100 text-amber-800 font-medium">
-                      Room {arrivals[0].room_number ?? 'TBD'}
-                    </span>
-                  </div>
-                  <p className="text-slate-600 text-[11px] leading-relaxed">
-                    This guest has preferences that may require additional
-                    attention before arrival.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/guests/${arrivals[0].guest_id}`)}
-                    className="mt-3 w-full py-1.5 text-xs font-medium text-amber-900 bg-amber-100 hover:bg-amber-200/80 rounded-md transition-colors text-center block cursor-pointer"
-                  >
-                    View Guest 360
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-xs text-amber-800">
-                No high-priority guest alerts today.
-              </p>
-            )}
-          </div>
-
           {/* Compact Room Status Section */}
           <div className="bg-white border border-slate-200/80 rounded-xl p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
