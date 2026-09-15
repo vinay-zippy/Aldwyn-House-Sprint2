@@ -34,3 +34,8 @@ Gym
 General
 - Guests can contact the Front Desk for assistance with hotel services and requests.
 - Hotel services and operating hours may be subject to change.
+
+Front Desk
+- The Front Desk is available 24 hours a day.
+- Guests can contact the Front Desk by dialing extension 0 from their room phone.
+- The Front Desk can assist with restaurant reservations, hotel services, late check-out requests, and general guest assistance.
