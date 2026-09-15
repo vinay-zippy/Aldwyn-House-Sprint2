@@ -5,6 +5,15 @@ import type { Reservation, UpcomingArrival } from '../types/reservation'
 import type { Room } from '../types/room'
 import { getToken } from './auth'
 
+export interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ChatResponse {
+  answer: string
+}
+
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
 
@@ -152,4 +161,14 @@ export function reviewAmenityRecommendation(
       body: JSON.stringify({ status }),
     },
   )
+}
+
+export function askAssistant(
+  message: string,
+  history: ChatMessage[],
+): Promise<string> {
+  return request<ChatResponse>('/assistant/chat', {
+    method: 'POST',
+    body: JSON.stringify({ message, history }),
+  }).then((response) => response.answer)
 }

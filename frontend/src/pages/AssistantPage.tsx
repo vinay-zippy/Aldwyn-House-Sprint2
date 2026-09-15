@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { askAssistant } from '../services/assistantApi'
+import { askAssistant } from '../services/api'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -30,7 +30,7 @@ export function AssistantPage() {
     setLoading(true)
 
     try {
-      const answer = await askAssistant(message)
+      const answer = await askAssistant(message, [])
 
       setMessages((current) => [
         ...current,

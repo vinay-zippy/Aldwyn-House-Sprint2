@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Bot, Send, X } from 'lucide-react'
-import { askAssistant } from '../services/assistantApi'
+import { askAssistant, type ChatMessage } from '../services/api'
 
 type Message = {
   role: 'user' | 'assistant'
@@ -34,6 +34,11 @@ export function AIChatbot() {
 
     if (!message || loading) return
 
+    const history: ChatMessage[] = messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    }))
+
     setMessages((current) => [
       ...current,
       { role: 'user', content: message },
@@ -43,7 +48,7 @@ export function AIChatbot() {
     setLoading(true)
 
     try {
-      const answer = await askAssistant(message)
+      const answer = await askAssistant(message, history)
 
       setMessages((current) => [
         ...current,
