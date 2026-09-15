@@ -3,7 +3,7 @@ import { Server, ShieldCheck } from 'lucide-react'
 
 export const SettingsPage: React.FC = () => {
   const apiBaseUrl =
-    import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1'
+    import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
 
   return (
     <div className="space-y-6">

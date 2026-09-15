@@ -12,6 +12,7 @@ import { Guest360Page } from './pages/Guest360Page'
 import { RoomsPage } from './pages/RoomsPage'
 import { AmenitiesPage } from './pages/AmenitiesPage'
 import { AIAssistancePage } from './pages/AIAssistancePage'
+import { AssistantPage } from './pages/AssistantPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { WalkInGuestPage } from './pages/WalkInGuestPage'
 import { LoginPage } from './pages/LoginPage'
@@ -39,6 +40,7 @@ function App() {
           <Route path="rooms" element={<ProtectedRoute><RoomsPage /></ProtectedRoute>} />
           <Route path="amenities" element={<ProtectedRoute roles={['FRONT_DESK']}><AmenitiesPage /></ProtectedRoute>} />
           <Route path="ai-assistance" element={<ProtectedRoute roles={['FRONT_DESK']}><AIAssistancePage /></ProtectedRoute>} />
+          <Route path="assistant" element={<ProtectedRoute roles={["FRONT_DESK"]}><AssistantPage /></ProtectedRoute>} />
           <Route path="settings" element={<ProtectedRoute roles={['FRONT_DESK']}><SettingsPage /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
