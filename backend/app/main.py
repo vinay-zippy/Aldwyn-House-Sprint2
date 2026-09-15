@@ -16,7 +16,10 @@ from app.routers import (
     rooms,
     authentication,
     walk_ins,
+    assistant,
 )
+from app.database import Base, engine
+from app.database import Base, engine
 from app.seed import seed_if_empty
 
 
@@ -59,6 +62,7 @@ app.include_router(dashboard.router)
 app.include_router(rooms.router)
 app.include_router(authentication.router)
 app.include_router(walk_ins.router)
+app.include_router(assistant.router)
 
 
 @app.get("/health", tags=["health"])
