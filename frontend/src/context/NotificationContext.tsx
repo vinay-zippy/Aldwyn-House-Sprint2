@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getRooms } from '../services/api'
+import { getNotifications, getRooms } from '../services/api'
 import type { Room } from '../types/room'
 import type { AppNotification, NotificationPreferences } from '../types/notification'
 import { NotificationContext, type NotificationContextValue } from './notificationsStore'
@@ -119,25 +119,29 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     rooms.forEach((room) => {
       // Read the OLD value before writing the new one - never derive "previous" from a
       // snapshot that has already been overwritten with the incoming value.
-      const previous = snapshot.get(room.room_number)
-      if (previous && previous !== room.status) {
-        pushNotification(room, previous)
-      }
       snapshot.set(room.room_number, room.status)
     })
     writePersistedSnapshot(snapshot)
-  }, [pushNotification])
+  }, [])
 
-  const recordRoomUpdate = useCallback((room: Room, previousStatus?: string) => {
-    const previous = previousStatus ?? statusSnapshot.current.get(room.room_number)
+  const recordRoomUpdate = useCallback((room: Room) => {
     statusSnapshot.current.set(room.room_number, room.status)
     initialized.current = true
     writePersistedSnapshot(statusSnapshot.current)
-    if (previous && previous !== room.status) {
-      pushNotification(room, previous)
-    }
     setLatestRooms((current) => current.map((r) => (r.room_number === room.room_number ? room : r)))
-  }, [pushNotification])
+  }, [])
+
+  const loadPersistedNotifications = useCallback(async () => {
+    try {
+      const incoming = await getNotifications()
+      if (!preferences.enabled) return
+      setNotifications((current) => incoming
+        .filter((notification) => !preferences.criticalOnly || CRITICAL_STATUSES.has(notification.status))
+        .map((notification) => ({ ...notification, read: current.find((item) => item.id === notification.id)?.read ?? false })))
+    } catch {
+      // Keep previously received notifications visible during a transient API failure.
+    }
+  }, [preferences])
 
   // Cross-tab fast path: the 'storage' event only fires in *other* tabs/windows of the
   // same origin when one of them writes SNAPSHOT_KEY (never in the tab that wrote it),
@@ -157,7 +161,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       Object.entries(incoming).forEach(([roomNumber, status]) => {
         const previous = snapshot.get(roomNumber)
         if (previous && previous !== status) {
-          pushNotification({ room_number: roomNumber, status: status as Room['status'] }, previous)
           setLatestRooms((current) =>
             current.map((r) => (r.room_number === roomNumber ? { ...r, status: status as Room['status'] } : r)),
           )
@@ -178,6 +181,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         if (!cancelled) {
           diffRooms(rooms)
           setLatestRooms(rooms)
+          void loadPersistedNotifications()
         }
       } catch {
         // Non-critical: notifications simply skip this cycle if rooms can't be fetched.
@@ -189,7 +193,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       cancelled = true
       clearInterval(interval)
     }
-  }, [diffRooms])
+  }, [diffRooms, loadPersistedNotifications])
 
   const markAllRead = useCallback(() => {
     setNotifications((current) => current.map((n) => ({ ...n, read: true })))

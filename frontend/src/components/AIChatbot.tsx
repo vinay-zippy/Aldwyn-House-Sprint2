@@ -77,10 +77,10 @@ export function AIChatbot() {
   return (
     <>
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 flex h-[520px] w-[380px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-          <div className="flex shrink-0 items-center justify-between bg-slate-900 px-4 py-3 text-white">
+        <div className="fixed bottom-24 right-6 z-50 flex h-[520px] w-[380px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-xl border border-[#e4ddd3] bg-[#fffdf9] shadow-2xl">
+          <div className="flex shrink-0 items-center justify-between bg-[#526b5a] px-4 py-3 text-white">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#dce9dd] text-[#526b5a]">
                 <Bot size={20} />
               </div>
 

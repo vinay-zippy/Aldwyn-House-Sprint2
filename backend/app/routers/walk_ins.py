@@ -33,6 +33,8 @@ def available_rooms(
     db: Session = Depends(get_db),
     _user=Depends(require_roles(UserRole.FRONT_DESK)),
 ):
+    if check_in < date.today():
+        raise HTTPException(status_code=400, detail="check_in cannot be in the past")
     if check_out <= check_in:
         raise HTTPException(status_code=400, detail="check_out must be after check_in")
     return [

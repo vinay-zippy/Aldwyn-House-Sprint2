@@ -10,7 +10,7 @@ export const Layout: React.FC = () => {
 
   return (
     <NotificationProvider>
-      <div className="min-h-screen bg-slate-50/70 text-slate-800 flex flex-col font-sans antialiased">
+      <div className="pastel-app min-h-screen bg-slate-50/70 text-slate-800 flex flex-col font-sans antialiased">
         <Sidebar
           mobileOpen={mobileMenuOpen}
           onCloseMobile={() => setMobileMenuOpen(false)}

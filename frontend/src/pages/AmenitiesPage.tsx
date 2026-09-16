@@ -1,291 +1,82 @@
 import React, { useEffect, useState } from 'react'
-import { Sparkles, Utensils, Compass, Wine, Coffee, X, Tag } from 'lucide-react'
+import { Compass, Sparkles, Utensils, X } from 'lucide-react'
 import { getAmenities } from '../services/api'
 import type { Amenity } from '../types/amenity'
-import { LoadingState } from '../components/common/LoadingState'
 import { ErrorState } from '../components/common/ErrorState'
-import { EmptyState } from '../components/common/EmptyState'
+import { LoadingState } from '../components/common/LoadingState'
 
-// No local spa/dining/travel photography exists in the project's assets, so stable
-// Unsplash CDN images are used as category imagery (no API key/auth required, fixed IDs).
-const CATEGORY_IMAGE = {
-  spa: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=900&q=70',
-  dining: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=70',
-  local_experience: 'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=900&q=70',
-  default: 'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=900&q=70',
-} as const
+type CategoryKey = 'spa' | 'dining' | 'local_experience'
+type AmenityContent = { label: string; title: string; subtitle: string; description: string; action: string; details: string[]; images: string[]; icon: React.ReactNode }
 
-// Fixed display order/styling for the three core amenity categories.
-const CATEGORY_META: Record<string, { label: string; icon: React.ReactNode; gradient: string; activeClasses: string; iconWrap: string; image: string }> = {
+const categoryContent: Record<CategoryKey, AmenityContent> = {
   spa: {
-    label: 'Spa',
-    icon: <Sparkles className="w-5 h-5" />,
-    gradient: 'from-emerald-500/15 via-emerald-500/5 to-transparent',
-    activeClasses: 'bg-emerald-600 text-white border-emerald-600 shadow-sm',
-    iconWrap: 'bg-emerald-100 text-emerald-700',
-    image: CATEGORY_IMAGE.spa,
+    label: 'Wellness at Aldwyn House', title: 'Serenity Spa', subtitle: 'Relax • Rejuvenate • Restore', action: 'Explore Spa',
+    description: 'A tranquil wellness space offering relaxing treatments and personalized spa experiences for hotel guests.',
+    details: ['Swedish, deep tissue and hot stone massage', 'Aromatherapy, couples spa and facial treatments', 'Open daily 08:00 - 20:00', '60 or 90 minute treatments', 'Lower ground floor · advance reservations recommended'],
+    images: ['https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1600334129128-685c5582fd35?auto=format&fit=crop&w=1200&q=80'], icon: <Sparkles className="h-4 w-4" />,
   },
   dining: {
-    label: 'Dining',
-    icon: <Utensils className="w-5 h-5" />,
-    gradient: 'from-amber-500/15 via-amber-500/5 to-transparent',
-    activeClasses: 'bg-amber-600 text-white border-amber-600 shadow-sm',
-    iconWrap: 'bg-amber-100 text-amber-700',
-    image: CATEGORY_IMAGE.dining,
+    label: 'Dining at Aldwyn House', title: 'Aldwyn Dining', subtitle: 'Taste • Gather • Indulge', action: 'Explore Dining',
+    description: 'From considered breakfasts to evening plates, our dining rooms bring seasonal ingredients and warm service together.',
+    details: ['Modern British cuisine with seasonal menus', 'Breakfast 07:00 - 10:30 · dinner from 18:00', 'Private dining available for intimate gatherings', 'Terrace and lounge service throughout the day', 'Ground floor · reservations encouraged for dinner'],
+    images: ['https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1544148103-0773bf10d330?auto=format&fit=crop&w=1200&q=80'], icon: <Utensils className="h-4 w-4" />,
   },
   local_experience: {
-    label: 'Local Experience',
-    icon: <Compass className="w-5 h-5" />,
-    gradient: 'from-sky-500/15 via-sky-500/5 to-transparent',
-    activeClasses: 'bg-sky-600 text-white border-sky-600 shadow-sm',
-    iconWrap: 'bg-sky-100 text-sky-700',
-    image: CATEGORY_IMAGE.local_experience,
+    label: 'Beyond Aldwyn House', title: 'Local Experiences', subtitle: 'Discover • Explore • Experience', action: 'Explore Experiences',
+    description: 'Thoughtfully selected city experiences, local flavours and guided discoveries, all within easy reach of the hotel.',
+    details: ['Curated walking tours and landmark visits', 'Independent galleries, markets and local makers', 'Seasonal food and cultural recommendations', 'Private guides can be arranged through Concierge', 'Available daily · speak with Front Desk to reserve'],
+    images: ['https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80'], icon: <Compass className="h-4 w-4" />,
   },
 }
 
-const CATEGORY_ORDER = ['spa', 'dining', 'local_experience']
+const categories = Object.keys(categoryContent) as CategoryKey[]
 
-function categoryMeta(category: string) {
-  return (
-    CATEGORY_META[category.toLowerCase()] ?? {
-      label: category.replace(/_/g, ' '),
-      icon: <Wine className="w-5 h-5" />,
-      gradient: 'from-rose-500/15 via-rose-500/5 to-transparent',
-      activeClasses: 'bg-rose-600 text-white border-rose-600 shadow-sm',
-      iconWrap: 'bg-rose-100 text-rose-700',
-      image: CATEGORY_IMAGE.default,
-    }
-  )
+function GalleryImage({ src, alt, onClick }: { src: string; alt: string; onClick: () => void }) {
+  return <button type="button" className="amenity-image-button" onClick={onClick}><img src={src} alt={alt} onError={(event) => { event.currentTarget.style.display = 'none'; event.currentTarget.parentElement?.setAttribute('aria-label', `${alt} image unavailable`) }} /></button>
 }
 
 export const AmenitiesPage: React.FC = () => {
   const [amenities, setAmenities] = useState<Amenity[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [categoryFilter, setCategoryFilter] = useState<string>('all')
-  const [selectedAmenity, setSelectedAmenity] = useState<Amenity | null>(null)
+  const [activeCategory, setActiveCategory] = useState<CategoryKey>('spa')
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   const loadAmenities = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const data = await getAmenities()
-      setAmenities(data)
-    } catch (err: unknown) {
-      setError(
-        err instanceof Error ? err.message : 'Unable to retrieve amenities.',
-      )
-    } finally {
-      setLoading(false)
-    }
+    try { setLoading(true); setError(null); setAmenities(await getAmenities()) }
+    catch (requestError: unknown) { setError(requestError instanceof Error ? requestError.message : 'Unable to retrieve amenities.') }
+    finally { setLoading(false) }
   }
 
   useEffect(() => {
-    void loadAmenities()
+    const initialLoad = window.setTimeout(() => void loadAmenities(), 0)
+    return () => window.clearTimeout(initialLoad)
   }, [])
 
-  const filteredAmenities =
-    categoryFilter === 'all'
-      ? amenities
-      : amenities.filter((a) => a.category.toLowerCase() === categoryFilter.toLowerCase())
+  const content = categoryContent[activeCategory]
+  const matchingAmenity = amenities.find((amenity) => amenity.category.toLowerCase() === activeCategory)
+  const detailDescription = matchingAmenity?.description ?? content.description
 
-  const presentCategories = Array.from(new Set(amenities.map((a) => a.category.toLowerCase())))
-  const orderedCategories = [
-    ...CATEGORY_ORDER.filter((cat) => presentCategories.includes(cat)),
-    ...presentCategories.filter((cat) => !CATEGORY_ORDER.includes(cat)),
-  ]
-
-  return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
-          Hotel Amenities Catalogue
-        </h1>
-        <p className="text-xs text-slate-500 mt-1">
-          Aldwyn House available services, dining options, and guest experiences.
-        </p>
-      </div>
-
-      {/* Category Filter Bar */}
-      <div className="flex items-center space-x-2 bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs overflow-x-auto">
-        <span className="text-xs font-semibold text-slate-700 shrink-0">
-          Category:
-        </span>
-        <button
-          type="button"
-          onClick={() => setCategoryFilter('all')}
-          aria-pressed={categoryFilter === 'all'}
-          className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 border ${
-            categoryFilter === 'all'
-              ? 'bg-slate-900 text-white font-semibold border-slate-900'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent'
-          }`}
-        >
-          All Amenities
-        </button>
-        {orderedCategories.map((cat) => {
-          const meta = categoryMeta(cat)
-          const isActive = categoryFilter.toLowerCase() === cat
-          return (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setCategoryFilter(cat)}
-              aria-pressed={isActive}
-              className={`px-3 py-1 rounded-lg text-xs font-medium capitalize transition-colors cursor-pointer shrink-0 border ${
-                isActive
-                  ? meta.activeClasses
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 border-transparent'
-              }`}
-            >
-              {meta.label}
-            </button>
-          )
-        })}
-      </div>
-
-      {loading ? (
-        <LoadingState message="Loading amenity catalogue..." />
-      ) : error ? (
-        <ErrorState message={error} onRetry={() => void loadAmenities()} />
-      ) : filteredAmenities.length === 0 ? (
-        <EmptyState
-          title="No amenities found"
-          message="There are currently no active amenities matching this category."
-          icon={<Coffee className="w-8 h-8" />}
-        />
-      ) : (
-        /* Amenities Cards Grid */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredAmenities.map((amenity) => {
-            const meta = categoryMeta(amenity.category)
-            return (
-              <button
-                key={amenity.id}
-                type="button"
-                onClick={() => setSelectedAmenity(amenity)}
-                className="group relative text-left bg-white rounded-2xl border border-slate-200/80 overflow-hidden shadow-xs hover:shadow-xl hover:-translate-y-1 hover:border-slate-300 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              >
-                <div className="relative h-36 w-full overflow-hidden">
-                  <img
-                    src={meta.image}
-                    alt=""
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                  <div className={`absolute inset-0 bg-gradient-to-t ${meta.gradient} from-slate-950/70 via-slate-950/10 to-transparent`} />
-                  <div className={`absolute top-3 left-3 p-2 rounded-lg ${meta.iconWrap} shadow-xs`}>
-                    {meta.icon}
-                  </div>
-                  <span className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-white/90 text-emerald-700 border border-emerald-200">
-                    Active
-                  </span>
-                  <h3 className="absolute bottom-2.5 left-4 right-4 text-base font-bold text-white drop-shadow-sm">
-                    {amenity.name}
-                  </h3>
-                </div>
-                <div className="p-5 space-y-3">
-                  <p className="text-xs font-semibold text-slate-500 capitalize">
-                    {meta.label}
-                  </p>
-                  <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
-                    {amenity.description ?? 'No description provided.'}
-                  </p>
-
-                  {amenity.tags && amenity.tags.length > 0 && (
-                    <div className="pt-3 border-t border-slate-100 flex flex-wrap gap-1.5">
-                      {amenity.tags.slice(0, 4).map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-medium"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <p className="text-[10px] font-semibold text-slate-400 group-hover:text-emerald-600 transition-colors pt-1">
-                    View details →
-                  </p>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Amenity Detail Modal */}
-      {selectedAmenity && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4"
-          onClick={() => setSelectedAmenity(null)}
-        >
-          <div
-            className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="relative h-56 w-full overflow-hidden">
-              <img
-                src={categoryMeta(selectedAmenity.category).image}
-                alt=""
-                className="h-full w-full object-cover"
-              />
-              <div className={`absolute inset-0 bg-gradient-to-t ${categoryMeta(selectedAmenity.category).gradient} from-slate-950/80 via-slate-950/20 to-transparent`} />
-              <button
-                type="button"
-                onClick={() => setSelectedAmenity(null)}
-                aria-label="Close details"
-                className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/80 hover:bg-white text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <div className={`absolute top-3 left-3 p-2.5 rounded-xl ${categoryMeta(selectedAmenity.category).iconWrap} shadow-xs`}>
-                {categoryMeta(selectedAmenity.category).icon}
-              </div>
-              <div className="absolute bottom-4 left-6 right-6">
-                <p className="text-[11px] font-semibold text-white/80 uppercase tracking-wider capitalize">
-                  {categoryMeta(selectedAmenity.category).label}
-                </p>
-                <h2 className="text-2xl font-bold text-white drop-shadow-sm mt-0.5">
-                  {selectedAmenity.name}
-                </h2>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-slate-600 leading-relaxed">
-                {selectedAmenity.description ?? 'No description provided.'}
-              </p>
-
-              {selectedAmenity.tags && selectedAmenity.tags.length > 0 && (
-                <div className="pt-3 border-t border-slate-100 space-y-2">
-                  <p className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                    <Tag className="w-3 h-3" /> Tags
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selectedAmenity.tags.map((tag, idx) => (
-                      <span
-                        key={idx}
-                        className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[10px] font-medium"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-2">
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
-                  Active amenity
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  )
+  return <div className="amenities-page">
+    <header>
+      <p className="amenities-eyebrow">Aldwyn House</p>
+      <h1 className="amenities-title">Amenities</h1>
+      <p className="amenities-intro">Considered experiences designed to make every stay feel more personal.</p>
+    </header>
+    <nav className="amenity-tabs" aria-label="Amenity categories">
+      {categories.map((category) => <button key={category} type="button" onClick={() => { setActiveCategory(category); setDetailsOpen(false) }} aria-pressed={activeCategory === category} className={`amenity-tab ${activeCategory === category ? 'active' : ''}`}>{categoryContent[category].label.replace(' at Aldwyn House', '').replace('Beyond Aldwyn House', 'Local Experience')}</button>)}
+    </nav>
+    {loading ? <LoadingState message="Loading amenity catalogue..." /> : error ? <ErrorState message={error} onRetry={() => void loadAmenities()} /> : <>
+      <section className="amenity-editorial-grid" aria-label={`${content.title} gallery`}>
+        <article className="amenity-tile amenity-copy amenity-copy--top"><p className="amenity-copy-label">{content.label}</p><h2>{content.title}</h2><p className="amenity-copy-subtitle">{content.subtitle}</p><p className="amenity-copy-description">{content.description}</p><button type="button" onClick={() => setDetailsOpen(true)} className="amenity-explore">{content.action}</button></article>
+        <div className="amenity-tile"><GalleryImage src={content.images[0]} alt={`${content.title} treatment`} onClick={() => setSelectedImage(content.images[0])} /></div>
+        <div className="amenity-tile"><GalleryImage src={content.images[1]} alt={`${content.title} interior`} onClick={() => setSelectedImage(content.images[1])} /></div>
+        <div className="amenity-tile"><GalleryImage src={content.images[2]} alt={`${content.title} experience`} onClick={() => setSelectedImage(content.images[2])} /></div>
+        <div className="amenity-tile"><GalleryImage src={content.images[3]} alt={`${content.title} detail`} onClick={() => setSelectedImage(content.images[3])} /></div>
+        <article className="amenity-tile amenity-copy amenity-copy--bottom"><p className="amenity-copy-label">Guest experience</p><h2>{matchingAmenity?.name ?? content.title}</h2><p className="amenity-copy-description">{detailDescription}</p><button type="button" onClick={() => setDetailsOpen(true)} className="amenity-explore">View Details</button></article>
+      </section>
+    </>}
+    {(detailsOpen || selectedImage) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#33403d]/45 p-4" onClick={() => { setDetailsOpen(false); setSelectedImage(null) }}><div className="w-full max-w-3xl overflow-hidden rounded-xl border border-[#e4ddd3] bg-[#fffdf9] shadow-2xl" onClick={(event) => event.stopPropagation()}><div className="flex justify-end p-3"><button type="button" aria-label="Close amenity details" onClick={() => { setDetailsOpen(false); setSelectedImage(null) }} className="bg-transparent p-1 text-[#71807b] hover:bg-[#f4efe7] hover:text-[#33403d]"><X className="h-5 w-5" /></button></div>{selectedImage ? <img src={selectedImage} alt={`${content.title} enlarged`} className="max-h-[72vh] w-full object-contain" onError={(event) => { event.currentTarget.style.display = 'none' }} /> : <div className="amenity-detail"><div><p className="amenities-eyebrow">{content.label}</p><h2 className="mt-2 font-serif text-3xl text-[#33403d]">{content.title}</h2><p className="mt-3 text-sm leading-6 text-[#71807b]">{detailDescription}</p></div><div><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-[#66816b]">{content.icon} At a glance</p><ul className="amenity-detail-list">{content.details.map((detail) => <li key={detail}>{detail}</li>)}</ul></div></div>}</div></div>}
+  </div>
 }

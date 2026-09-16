@@ -216,6 +216,18 @@ class Room(Base):
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow, nullable=False)
 
 
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    recipient_role = Column(Enum("FRONT_DESK", "HOUSEKEEPING", name="notificationrecipientrole"), nullable=False, index=True)
+    room_number = Column(String, nullable=False, index=True)
+    previous_status = Column(Enum(RoomStatus), nullable=True)
+    new_status = Column(Enum(RoomStatus), nullable=False)
+    message = Column(String, nullable=False)
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+
+
 class User(Base):
     __tablename__ = "users"
 

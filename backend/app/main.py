@@ -15,6 +15,7 @@ from app.routers import (
     reservations,
     rooms,
     authentication,
+    notifications,
     walk_ins,
     assistant,
 )
@@ -62,6 +63,7 @@ app.include_router(dashboard.router)
 app.include_router(rooms.router)
 app.include_router(authentication.router)
 app.include_router(walk_ins.router)
+app.include_router(notifications.router)
 app.include_router(assistant.router)
 
 

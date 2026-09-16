@@ -3,6 +3,7 @@ import type { DashboardSummary } from '../types/dashboard'
 import type { Guest, GuestDetail, GuestPreferenceResponse } from '../types/guest'
 import type { Reservation, UpcomingArrival } from '../types/reservation'
 import type { Room } from '../types/room'
+import type { AppNotification } from '../types/notification'
 import { getToken } from './auth'
 
 export interface ChatMessage {
@@ -134,6 +135,19 @@ export function getGuestPreferences(
 export function getRooms(floor?: string): Promise<Room[]> {
   const query = floor ? `?floor=${encodeURIComponent(floor)}` : ''
   return request<Room[]>(`/rooms${query}`)
+}
+
+export function getNotifications(): Promise<AppNotification[]> {
+  return request<{ id: string; room_number: string; previous_status?: string; new_status: string; message: string; created_at: string }[]>('/notifications')
+    .then((notifications) => notifications.map((notification) => ({
+      id: notification.id,
+      roomNumber: notification.room_number,
+      status: notification.new_status,
+      previousStatus: notification.previous_status,
+      message: notification.message,
+      timestamp: notification.created_at,
+      read: false,
+    })))
 }
 
 export function getAmenities(propertyId?: string): Promise<Amenity[]> {

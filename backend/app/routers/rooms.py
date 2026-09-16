@@ -34,7 +34,16 @@ def update_room_status(
             status_code=403,
             detail="Housekeeping may only set rooms to ready, dirty, or maintenance",
         )
+    if room.status == status:
+        return room
+    previous_status = room.status
     room.status = status
+    recipient_role = (
+        UserRole.HOUSEKEEPING.value
+        if user_role == UserRole.FRONT_DESK.value
+        else UserRole.FRONT_DESK.value
+    )
+    crud.create_room_notification(db, recipient_role, room.room_number, previous_status, status)
     db.commit()
     db.refresh(room)
     return room

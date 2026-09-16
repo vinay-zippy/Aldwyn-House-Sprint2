@@ -2,6 +2,7 @@
 (e.g. from the AI agent/RAG code teams build in Sprint 3) and to unit test."""
 
 from datetime import date, datetime, timezone
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -67,12 +68,43 @@ def create_reservation(db: Session, payload: schemas.ReservationCreate) -> model
     return reservation
 
 
+def create_room_notification(
+    db: Session,
+    recipient_role: str,
+    room_number: str,
+    previous_status: models.RoomStatus | None,
+    new_status: models.RoomStatus,
+) -> models.Notification:
+    message = f"Room {room_number} status changed from {previous_status.value if previous_status else 'unknown'} to {new_status.value}."
+    notification = models.Notification(
+        recipient_role=recipient_role,
+        room_number=room_number,
+        previous_status=previous_status,
+        new_status=new_status,
+        message=message,
+    )
+    db.add(notification)
+    return notification
+
+
+def list_notifications(db: Session, recipient_role: str) -> list[models.Notification]:
+    return (
+        db.query(models.Notification)
+        .filter(models.Notification.recipient_role == recipient_role)
+        .order_by(models.Notification.created_at.desc())
+        .limit(30)
+        .all()
+    )
+
+
 def update_reservation_status(
     db: Session, reservation_id: str, status: models.ReservationStatus
 ) -> models.Reservation | None:
     reservation = get_reservation(db, reservation_id)
     if reservation is None:
         return None
+    if reservation.status == status:
+        return reservation
     reservation.status = status
     if reservation.room_number and status == models.ReservationStatus.checked_in:
         room = get_room(db, reservation.room_number)
@@ -84,7 +116,15 @@ def update_reservation_status(
     ):
         room = get_room(db, reservation.room_number)
         if room and room.status == models.RoomStatus.occupied:
+            previous_status = room.status
             room.status = models.RoomStatus.dirty
+            create_room_notification(
+                db,
+                "HOUSEKEEPING",
+                room.room_number,
+                previous_status,
+                models.RoomStatus.dirty,
+            )
     db.commit()
     db.refresh(reservation)
     return reservation
@@ -155,8 +195,16 @@ def create_walk_in(
     payload: schemas.WalkInCreate,
     prefs_collection=None,
 ) -> tuple[models.Guest, models.Reservation, bool]:
-    if payload.check_out <= payload.check_in:
-        raise ValueError("check_out must be after check_in")
+    property_ = db.query(models.Property).first()
+    if property_ is None:
+        raise ValueError("No hotel property is configured")
+    try:
+        local_now = datetime.now(ZoneInfo(property_.timezone))
+    except (ValueError, TypeError):
+        local_now = datetime.now().astimezone()
+    current_minute = local_now.replace(second=0, microsecond=0)
+    if datetime.combine(payload.check_in, payload.check_in_time).replace(tzinfo=local_now.tzinfo) < current_minute:
+        raise ValueError("Check-in date and time cannot be in the past")
     room = get_room(db, payload.room_number)
     if room is None:
         raise ValueError(f"Room {payload.room_number} does not exist")
@@ -185,6 +233,8 @@ def create_walk_in(
         property_id=db.query(models.Property.id).first()[0],
         check_in=payload.check_in,
         check_out=payload.check_out,
+        check_in_time=payload.check_in_time,
+        check_out_time=payload.check_out_time,
         room_number=payload.room_number,
         number_of_guests=payload.number_of_guests,
         status=models.ReservationStatus.confirmed,

@@ -1,10 +1,11 @@
 """Pydantic request/response schemas mirroring the Core Data Model and API contract."""
 
 from datetime import date, datetime, time
+import re
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator, model_validator
 
 from app.models import (
     AmenityCategory,
@@ -110,6 +111,34 @@ class WalkInCreate(BaseModel):
     dietary: list[dict] = []
     room_preferences: list[dict] = []
     notes: list[dict] = []
+
+    @field_validator("name", "phone", "id_number")
+    @classmethod
+    def required_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("This field is required")
+        return value
+
+    @field_validator("phone")
+    @classmethod
+    def valid_phone(cls, value: str) -> str:
+        if not re.fullmatch(r"[0-9+() .-]{7,20}", value):
+            raise ValueError("Enter a valid phone number")
+        return value
+
+    @field_validator("id_type")
+    @classmethod
+    def valid_id_type(cls, value: str) -> str:
+        if value not in {"passport", "national_id", "driver_license"}:
+            raise ValueError("ID type must be passport, national_id, or driver_license")
+        return value
+
+    @model_validator(mode="after")
+    def valid_stay_period(self):
+        if datetime.combine(self.check_out, self.check_out_time) <= datetime.combine(self.check_in, self.check_in_time):
+            raise ValueError("Check-out date and time must be after check-in date and time")
+        return self
 
 
 class WalkInOut(BaseModel):
@@ -264,6 +293,17 @@ class RoomOut(BaseModel):
     floor: str
     status: RoomStatus
     room_type: str
+
+
+class NotificationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    room_number: str
+    previous_status: RoomStatus | None = None
+    new_status: RoomStatus
+    message: str
+    created_at: datetime
 
 
 class DashboardSummaryOut(BaseModel):
