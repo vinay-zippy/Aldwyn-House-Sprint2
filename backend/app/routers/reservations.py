@@ -8,8 +8,9 @@ from app.config import settings
 from app.database import get_db
 from app.mongo import get_preferences_collection
 from app.routers.guests import _preference_response
+from app.auth import UserRole, require_roles
 
-router = APIRouter(prefix="/api/v1/reservations", tags=["reservations"])
+router = APIRouter(prefix="/api/v1/reservations", tags=["reservations"], dependencies=[Depends(require_roles(UserRole.FRONT_DESK))])
 
 
 @router.get("", response_model=list[schemas.ReservationOut])
@@ -46,6 +47,8 @@ def upcoming_arrivals(
             "guest_name": reservation.guest.name,
             "check_in": reservation.check_in,
             "check_out": reservation.check_out,
+            "check_in_time": reservation.check_in_time,
+            "check_out_time": reservation.check_out_time,
             "room_number": reservation.room_number,
             "status": reservation.status,
         }
@@ -79,4 +82,19 @@ def create_reservation(payload: schemas.ReservationCreate, db: Session = Depends
     guest = crud.get_guest(db, payload.guest_id)
     if not guest:
         raise HTTPException(status_code=400, detail="guest_id does not reference an existing guest")
-    return crud.create_reservation(db, payload)
+    try:
+        return crud.create_reservation(db, payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.patch("/{reservation_id}/status", response_model=schemas.ReservationDetail)
+def update_reservation_status(
+    reservation_id: str,
+    payload: schemas.ReservationStatusUpdate,
+    db: Session = Depends(get_db),
+):
+    reservation = crud.update_reservation_status(db, reservation_id, payload.status)
+    if reservation is None:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+    return reservation

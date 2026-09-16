@@ -28,25 +28,28 @@ def test_seed_if_empty_populates_demo_data(db_session, preferences_store, monkey
 
     guests = db_session.query(models.Guest).all()
     assert len(guests) == 4
-    first_guest = next(guest for guest in guests if guest.email == "jamie.rivera@example.com")
+    jamie = next(g for g in guests if g.email == "jamie.rivera@example.com")
 
     properties = db_session.query(models.Property).all()
     assert len(properties) == 1
 
     reservations = db_session.query(models.Reservation).all()
     assert len(reservations) == 4
-    first_reservation = next(
-        reservation for reservation in reservations if reservation.guest_id == first_guest.id
-    )
-    assert first_reservation.room_number == "101"
+    jamie_reservation = next(r for r in reservations if r.guest_id == jamie.id)
+    assert jamie_reservation.room_number == "101"
 
     folios = db_session.query(models.Folio).all()
     assert len(folios) == 4
-    first_folio = next(folio for folio in folios if folio.reservation_id == first_reservation.id)
-    assert first_folio.balance == 792
+    jamie_folio = next(f for f in folios if f.reservation_id == jamie_reservation.id)
+    assert jamie_folio.balance == 792
 
-    assert preferences_store[first_guest.id] == {
-        "guest_id": first_guest.id,
+    concierge_requests = db_session.query(models.ConciergeRequest).all()
+    assert len(concierge_requests) == 1
+    assert concierge_requests[0].guest_id == jamie.id
+    assert concierge_requests[0].request == "Extra pillows"
+
+    assert preferences_store[jamie.id] == {
+        "guest_id": jamie.id,
         "dietary": [{"value": "vegetarian", "priority": "high"}],
         "room_preferences": [
             {"value": "high floor", "priority": "normal"},
@@ -58,7 +61,7 @@ def test_seed_if_empty_populates_demo_data(db_session, preferences_store, monkey
                 "priority": "normal",
             }
         ],
-        "updated_at": preferences_store[first_guest.id]["updated_at"],
+        "updated_at": preferences_store[jamie.id]["updated_at"],
     }
 
 
@@ -70,3 +73,17 @@ def test_seed_if_empty_is_idempotent(db_session, preferences_store, monkeypatch)
 
     assert db_session.query(models.Guest).count() == 4
     assert db_session.query(models.Reservation).count() == 4
+
+
+def test_seed_if_empty_adds_amenities_to_existing_story_data(
+    db_session, preferences_store, monkeypatch
+):
+    _patch_seed_targets(monkeypatch, preferences_store)
+
+    seed_if_empty()
+    db_session.query(models.Amenity).delete()
+    db_session.commit()
+
+    seed_if_empty()
+
+    assert db_session.query(models.Amenity).count() == 3

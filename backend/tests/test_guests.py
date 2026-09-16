@@ -5,6 +5,20 @@ from app.mongo import get_preferences_collection
 from tests.factories import make_concierge_request, make_guest, make_property_guest_plan
 
 
+def test_create_guest_generates_sequential_guest_code(client):
+    response = client.post(
+        "/api/v1/guests",
+        json={"name": "Walk-in Guest", "email": "walkin@example.com", "phone": "555-0100"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["guest_code"] == "G-0001"
+
+    guests = client.get("/api/v1/guests")
+    assert guests.status_code == 200
+    assert guests.json()[0]["guest_code"] == "G-0001"
+
+
 def test_guest_detail_with_no_preferences_saved(client, db_session):
     _property, guest, _rate_plan = make_property_guest_plan(db_session)
     resp = client.get(f"/api/v1/guests/{guest.id}")
@@ -101,16 +115,20 @@ def test_guest_preferences_returns_past_requests_without_pii(client, db_session,
     make_concierge_request(db_session, guest)
     preferences_store[guest.id] = {
         "guest_id": guest.id,
-        "dietary": ["vegetarian"],
-        "room_preferences": ["high floor"],
+        "dietary": [{"value": "vegetarian", "priority": "high"}],
+        "room_preferences": [{"value": "high floor", "priority": "normal"}],
     }
 
     response = client.get(f"/api/v1/guests/{guest.id}/preferences")
 
     assert response.status_code == 200
     assert response.json() == {
-        "dietary_preferences": ["vegetarian"],
-        "room_preferences": ["high floor"],
+        "dietary_preferences": [
+            {"value": "vegetarian", "priority": "high", "is_high_priority": True}
+        ],
+        "room_preferences": [
+            {"value": "high floor", "priority": "normal", "is_high_priority": False}
+        ],
         "past_requests": [{"request": "Extra pillows", "status": "completed"}],
     }
     assert "email" not in response.json()
@@ -125,7 +143,7 @@ def test_guest_preferences_do_not_return_another_guests_profile(
     db_session.commit()
     preferences_store[other_guest.id] = {
         "guest_id": other_guest.id,
-        "dietary": ["gluten-free"],
+        "dietary": [{"value": "gluten-free", "priority": "high"}],
     }
 
     response = client.get(f"/api/v1/guests/{guest.id}/preferences")

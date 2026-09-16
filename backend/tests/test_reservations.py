@@ -50,12 +50,17 @@ def test_reservation_guest_preferences_use_reservation_guest(client, db_session,
     reservation = make_reservation(db_session, guest, property_, rate_plan)
     make_concierge_request(db_session, guest)
     db_session.commit()
-    preferences_store[guest.id] = {"guest_id": guest.id, "dietary": ["vegetarian"]}
+    preferences_store[guest.id] = {
+        "guest_id": guest.id,
+        "dietary": [{"value": "vegetarian", "priority": "high"}],
+    }
 
     response = client.get(f"/api/v1/reservations/{reservation.id}/guest-preferences")
 
     assert response.status_code == 200
-    assert response.json()["dietary_preferences"] == ["vegetarian"]
+    assert response.json()["dietary_preferences"] == [
+        {"value": "vegetarian", "priority": "high", "is_high_priority": True}
+    ]
     assert response.json()["past_requests"] == [
         {"request": "Extra pillows", "status": "completed"}
     ]

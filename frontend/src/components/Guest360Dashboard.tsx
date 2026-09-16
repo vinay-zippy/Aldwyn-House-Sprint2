@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { getGuest } from '../services/api'
-import type { Guest, PreferenceItem } from '../types/guest'
+import type { GuestDetail, GuestPreferences, PreferenceItem } from '../types/guest'
 import {
   BadgeIcon,
   BedIcon,
@@ -19,7 +19,7 @@ import {
 } from './icons'
 
 type PreferenceGroup = {
-  key: keyof Guest['preferences']
+  key: keyof GuestPreferences
   label: string
   description: string
   icon: (props: { className?: string }) => React.JSX.Element
@@ -60,7 +60,7 @@ function PreferenceRow({ item }: { item: PreferenceItem }) {
 function Guest360Dashboard() {
   const [guestId, setGuestId] = useState(initialGuestId)
   const [selectedGuestId, setSelectedGuestId] = useState(initialGuestId)
-  const [guest, setGuest] = useState<Guest | null>(null)
+  const [guest, setGuest] = useState<GuestDetail | null>(null)
   const [isLoading, setIsLoading] = useState(() => Boolean(initialGuestId()))
   const [error, setError] = useState<string | null>(null)
 
@@ -227,7 +227,7 @@ function Guest360Dashboard() {
 
             <div className="preference-grid">
               {preferenceGroups.map((group) => {
-                const items = guest.preferences[group.key]
+                const items: PreferenceItem[] = guest.preferences ? guest.preferences[group.key] : []
                 const Icon = group.icon
                 return (
                   <section className="preference-card" key={group.key} aria-labelledby={`${group.key}-title`}>
@@ -240,7 +240,7 @@ function Guest360Dashboard() {
                     </div>
                     {items.length > 0 ? (
                       <ul className="preference-list">
-                        {items.map((item, index) => <PreferenceRow key={`${item.value}-${index}`} item={item} />)}
+                        {items.map((item: PreferenceItem, index: number) => <PreferenceRow key={`${item.value}-${index}`} item={item} />)}
                       </ul>
                     ) : <p className="no-preferences">No preferences recorded.</p>}
                   </section>

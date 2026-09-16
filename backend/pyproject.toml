@@ -13,6 +13,11 @@ dependencies = [
     "pydantic-settings==2.15.0",
     "email-validator==2.3.0",
     "python-dotenv==1.2.3",
+    "langchain>=1.4.0",
+    "langchain-openai>=1.6.2",
+    "langchain-community>=0.4.2",
+    "chromadb>=1.5.9",
+    "langchain-chroma>=1.1.0",
 ]
 
 [dependency-groups]
@@ -36,3 +41,6 @@ select = ["E", "F", "I", "UP"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+filterwarnings = [
+    "ignore:The anyio.abc.BlockingPortal alias is deprecated:DeprecationWarning:starlette.testclient",
+]

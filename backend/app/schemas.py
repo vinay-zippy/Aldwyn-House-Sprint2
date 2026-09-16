@@ -1,12 +1,18 @@
 """Pydantic request/response schemas mirroring the Core Data Model and API contract."""
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
-from app.models import FolioStatus, ReservationStatus
+from app.models import (
+    AmenityCategory,
+    FolioStatus,
+    RecommendationReviewStatus,
+    ReservationStatus,
+    RoomStatus,
+)
 
 # ---- Guest ----
 
@@ -15,9 +21,12 @@ class GuestOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
+    guest_code: str
     name: str
     email: EmailStr
     phone: str | None = None
+    id_type: str | None = None
+    id_number: str | None = None
     loyalty_tier: str
     created_at: datetime
 
@@ -40,13 +49,73 @@ class PastRequestOut(BaseModel):
 
 
 class GuestPreferenceResponse(BaseModel):
-    dietary_preferences: list[str] = []
-    room_preferences: list[str] = []
+    dietary_preferences: list[PreferenceItem] = []
+    room_preferences: list[PreferenceItem] = []
     past_requests: list[PastRequestOut] = []
 
 
 class GuestDetail(GuestOut):
     preferences: GuestPreferences
+
+
+class GuestCreate(BaseModel):
+    name: str
+    email: EmailStr
+    phone: str | None = None
+    loyalty_tier: str = "standard"
+    id_type: str | None = None
+    id_number: str | None = None
+
+
+class GuestUpdate(BaseModel):
+    name: str
+    email: EmailStr
+    phone: str | None = None
+    loyalty_tier: str = "standard"
+    id_type: str | None = None
+    id_number: str | None = None
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    role: str
+    username: str
+
+
+class GuestMatch(BaseModel):
+    guest: GuestOut
+    previous_stays: list["ReservationOut"]
+
+
+class WalkInCreate(BaseModel):
+    guest_id: str | None = None
+    name: str
+    email: EmailStr
+    phone: str
+    id_type: str
+    id_number: str
+    check_in: date
+    check_out: date
+    check_in_time: time = time(14, 0)
+    check_out_time: time = time(11, 0)
+    number_of_guests: int = 1
+    room_number: str
+    loyalty_tier: str = "standard"
+    dietary: list[dict] = []
+    room_preferences: list[dict] = []
+    notes: list[dict] = []
+
+
+class WalkInOut(BaseModel):
+    guest: GuestOut
+    reservation: "ReservationOut"
+    returning_guest: bool
 
 
 # ---- Property / RatePlan ----
@@ -83,6 +152,10 @@ class ReservationCreate(BaseModel):
     rate_plan_id: str | None = None
     check_in: date
     check_out: date
+    room_number: str | None = None
+    number_of_guests: int = 1
+    check_in_time: time | None = None
+    check_out_time: time | None = None
     status: ReservationStatus = ReservationStatus.confirmed
 
 
@@ -95,6 +168,8 @@ class ReservationOut(BaseModel):
     rate_plan_id: str | None = None
     check_in: date
     check_out: date
+    check_in_time: time | None = None
+    check_out_time: time | None = None
     room_number: str | None
     status: ReservationStatus
 
@@ -106,6 +181,8 @@ class UpcomingArrivalOut(BaseModel):
     guest_name: str
     check_in: date
     check_out: date
+    check_in_time: time | None = None
+    check_out_time: time | None = None
     room_number: str | None
     status: ReservationStatus
 
@@ -124,6 +201,10 @@ class ReservationDetail(ReservationOut):
     folio: FolioOut | None = None
 
 
+class ReservationStatusUpdate(BaseModel):
+    status: ReservationStatus
+
+
 # ---- Availability ----
 
 
@@ -134,3 +215,60 @@ class AvailabilitySlot(BaseModel):
     capacity: int
     booked: int
     available: bool
+
+
+# ---- Amenities / preference matching (Story 4) ----
+
+
+class AmenityOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    property_id: str | None = None
+    name: str
+    category: AmenityCategory
+    description: str | None = None
+    tags: list[str] = []
+    is_active: bool = True
+
+
+class AmenityRecommendation(BaseModel):
+    amenity: AmenityOut
+    matched_terms: list[str] = []
+    # Recommendations are always surfaced for staff review before reaching a guest.
+    status: str = "pending_staff_review"
+
+
+class RecommendationReviewUpdate(BaseModel):
+    status: RecommendationReviewStatus
+
+
+class RecommendationReviewOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    guest_id: str
+    amenity_id: str
+    status: RecommendationReviewStatus
+    reviewed_at: datetime | None = None
+
+
+# ---- Rooms & Dashboard ----
+
+
+class RoomOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    room_number: str
+    floor: str
+    status: RoomStatus
+    room_type: str
+
+
+class DashboardSummaryOut(BaseModel):
+    upcoming_arrivals: int
+    in_house_guests: int
+    departures: int
+    high_priority_guests: int
+    room_summary: dict[str, int]

@@ -35,8 +35,12 @@ def make_rate_plan(db_session, property_, **overrides):
 
 
 def make_guest(db_session, **overrides):
-    defaults = dict(name="Test Guest", email="test@example.com", loyalty_tier="standard")
+    defaults = dict(
+        name="Test Guest", email="test@example.com", loyalty_tier="standard"
+    )
     defaults.update(overrides)
+    if "guest_code" not in defaults:
+        defaults["guest_code"] = f"G-{db_session.query(models.Guest).count() + 1:04d}"
     guest = models.Guest(**defaults)
     db_session.add(guest)
     db_session.flush()
@@ -89,3 +93,17 @@ def make_property_guest_plan(db_session):
     guest = make_guest(db_session)
     db_session.commit()
     return property_, guest, rate_plan
+
+
+def make_amenity(db_session, **overrides):
+    defaults = dict(
+        name="Test Amenity",
+        category=models.AmenityCategory.dining,
+        description="Test amenity",
+        tags=[],
+    )
+    defaults.update(overrides)
+    amenity = models.Amenity(**defaults)
+    db_session.add(amenity)
+    db_session.flush()
+    return amenity
