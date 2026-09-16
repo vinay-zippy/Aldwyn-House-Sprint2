@@ -2,7 +2,7 @@
 
 from datetime import date, datetime, time
 from decimal import Decimal
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
@@ -199,6 +199,7 @@ class FolioOut(BaseModel):
 class ReservationDetail(ReservationOut):
     guest: GuestOut
     folio: FolioOut | None = None
+    workflow: "CheckInWorkflowOut | None" = None
 
 
 class ReservationStatusUpdate(BaseModel):
@@ -272,3 +273,38 @@ class DashboardSummaryOut(BaseModel):
     departures: int
     high_priority_guests: int
     room_summary: dict[str, int]
+
+
+class HousekeepingTaskOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    reservation_id: str
+    guest_id: str
+    room_number: str | None
+    task_type: str
+    details: dict[str, Any]
+    status: str
+    priority: str
+    created_at: datetime
+    completed_at: datetime | None = None
+
+
+class HousekeepingTaskStatusUpdate(BaseModel):
+    status: Literal["pending", "in_progress", "completed", "cancelled"]
+
+
+class CheckInWorkflowOut(BaseModel):
+    transitioned: bool
+    tasks: list[HousekeepingTaskOut]
+
+
+class ConciergeRequestCreate(BaseModel):
+    guest_id: str
+    message: str
+
+
+class ConciergeRequestAgentResponse(BaseModel):
+    status: str
+    message: str
+    request_id: str | None = None

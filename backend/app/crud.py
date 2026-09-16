@@ -68,7 +68,10 @@ def create_reservation(db: Session, payload: schemas.ReservationCreate) -> model
 
 
 def update_reservation_status(
-    db: Session, reservation_id: str, status: models.ReservationStatus
+    db: Session,
+    reservation_id: str,
+    status: models.ReservationStatus,
+    commit: bool = True,
 ) -> models.Reservation | None:
     reservation = get_reservation(db, reservation_id)
     if reservation is None:
@@ -85,8 +88,9 @@ def update_reservation_status(
         room = get_room(db, reservation.room_number)
         if room and room.status == models.RoomStatus.occupied:
             room.status = models.RoomStatus.dirty
-    db.commit()
-    db.refresh(reservation)
+    if commit:
+        db.commit()
+        db.refresh(reservation)
     return reservation
 
 

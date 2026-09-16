@@ -13,7 +13,20 @@ import enum
 import uuid
 from datetime import datetime, time, timezone
 
-from sqlalchemy import JSON, Boolean, Column, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String, Time
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Time,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -117,6 +130,31 @@ class ConciergeRequest(Base):
     created_at = Column(DateTime, default=utcnow, nullable=False)
 
     guest = relationship("Guest", back_populates="concierge_requests")
+
+
+class HousekeepingTask(Base):
+    __tablename__ = "housekeeping_tasks"
+    __table_args__ = (
+        UniqueConstraint(
+            "reservation_id",
+            "task_type",
+            name="uq_housekeeping_task_reservation_type",
+        ),
+    )
+
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    reservation_id = Column(String(36), ForeignKey("reservations.id"), nullable=False, index=True)
+    guest_id = Column(String(36), ForeignKey("guests.id"), nullable=False, index=True)
+    room_number = Column(String, nullable=True)
+    task_type = Column(String, nullable=False)
+    details = Column(JSON, nullable=False, default=dict)
+    status = Column(String, nullable=False, default="pending")
+    priority = Column(String, nullable=False, default="normal")
+    created_at = Column(DateTime, default=utcnow, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+
+    reservation = relationship("Reservation")
+    guest = relationship("Guest")
 
 
 class Folio(Base):

@@ -4,11 +4,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app import crud, models, schemas
+from app.auth import UserRole, require_roles
 from app.config import settings
 from app.database import get_db
 from app.mongo import get_preferences_collection
 from app.routers.guests import _preference_response
-from app.auth import UserRole, require_roles
+from app.services.check_in_workflow import process_check_in
 
 router = APIRouter(prefix="/api/v1/reservations", tags=["reservations"], dependencies=[Depends(require_roles(UserRole.FRONT_DESK))])
 
@@ -93,8 +94,24 @@ def update_reservation_status(
     reservation_id: str,
     payload: schemas.ReservationStatusUpdate,
     db: Session = Depends(get_db),
+    prefs_collection=Depends(get_preferences_collection),
 ):
-    reservation = crud.update_reservation_status(db, reservation_id, payload.status)
-    if reservation is None:
+    if payload.status != models.ReservationStatus.checked_in:
+        reservation = crud.update_reservation_status(db, reservation_id, payload.status)
+        if reservation is None:
+            raise HTTPException(status_code=404, detail="Reservation not found")
+        return reservation
+
+    try:
+        result = process_check_in(db, reservation_id, prefs_collection)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if result is None:
         raise HTTPException(status_code=404, detail="Reservation not found")
-    return reservation
+
+    response = schemas.ReservationDetail.model_validate(result.reservation).model_dump()
+    response["workflow"] = {
+        "transitioned": result.transitioned,
+        "tasks": result.tasks,
+    }
+    return response

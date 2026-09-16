@@ -6,6 +6,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import Base, engine, migrate_guest_codes, migrate_walk_in_columns
 from app.auth import UserRole
+from app.routers import concierge
+from app.routers import housekeeping
 from app.routers import (
     amenities,
     availability,
@@ -68,3 +70,5 @@ app.include_router(assistant.router)
 @app.get("/health", tags=["health"])
 def health():
     return {"status": "ok"}
+app.include_router(concierge.router)
+app.include_router(housekeeping.router)
