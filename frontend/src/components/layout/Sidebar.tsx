@@ -36,18 +36,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
     : navItems
 
   const navContent = (
-    <div className="flex flex-col h-full bg-[#f0ece4] text-slate-600 w-64 border-r border-[#dfd7ca] select-none">
+    <div className="flex flex-col h-full bg-[#101c2c] text-[#dce2e8] w-64 border-r border-[#172a46] select-none">
       {/* Brand Header */}
-      <div className="p-5 border-b border-[#dfd7ca] flex items-center justify-between">
+      <div className="p-5 border-b border-[#172a46] flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <div className="w-9 h-9 rounded-lg bg-[#78947c] flex items-center justify-center text-white font-bold text-base shadow-sm">
+          <div className="w-9 h-9 rounded-lg bg-[#101c2c] flex items-center justify-center text-white font-bold text-base shadow-sm">
             AH
           </div>
           <div>
-            <h1 className="font-semibold text-[#33403d] text-sm tracking-tight">
+            <h1 className="m-0 text-left text-sm font-semibold leading-tight tracking-tight text-[#dce2e8]" style={{ fontFamily: "'Newsreader', Georgia, serif" }}>
               Aldwyn House
             </h1>
-            <p className="text-[11px] text-[#7d8982]">Personalized Guest 360</p>
+            <p className="text-[11px] text-[#dce2e8]">Boutique Operations</p>
           </div>
         </div>
         {onCloseMobile && (
@@ -73,8 +73,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className={({ isActive }) =>
                 `flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
                   isActive
-                    ? 'bg-[#dce9dd] text-[#496c52] font-semibold border-l-2 border-[#78947c]'
-                    : 'text-[#71807b] hover:bg-[#e7e1ef] hover:text-[#42534e]'
+                    ? 'bg-[#dce6f0] text-[#172a46] font-semibold border-l-2 border-[#c6a15b]'
+                    : 'text-[#dce2e8] hover:bg-[#172a46] hover:text-white'
                 }`
               }
             >
@@ -86,16 +86,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </nav>
 
       {/* Staff footer */}
-      <div className="p-4 border-t border-[#dfd7ca] bg-[#e9e4da]">
+      <div className="p-4 border-t border-[#172a46] bg-[#172a46]">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-full bg-[#dce7ef] text-[#52798f] flex items-center justify-center text-xs font-semibold">
+          <div className="w-8 h-8 rounded-full bg-[#dce6f0] text-[#2f5d8c] flex items-center justify-center text-xs font-semibold">
             {(getUsername() ?? 'ST').slice(0, 2).toUpperCase()}
           </div>
           <div className="overflow-hidden">
-            <p className="text-xs font-medium text-[#42534e] truncate">
+            <p className="text-xs font-medium text-white truncate">
               {getRole() === 'HOUSEKEEPING' ? 'Housekeeping Staff' : 'Front Desk Staff'}
             </p>
-            <p className="text-[10px] text-[#7d8982]">{getUsername() ?? 'Staff workspace'}</p>
+            <p className="text-[10px] text-[#dce2e8]">{getUsername() ?? 'Staff workspace'}</p>
           </div>
         </div>
       </div>

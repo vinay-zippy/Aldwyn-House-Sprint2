@@ -131,6 +131,18 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setLatestRooms((current) => current.map((r) => (r.room_number === room.room_number ? room : r)))
   }, [])
 
+  const refreshRooms = useCallback(async () => {
+    try {
+      const rooms = await getRooms()
+      setLatestRooms(rooms)
+      rooms.forEach((room) => statusSnapshot.current.set(room.room_number, room.status))
+      initialized.current = true
+      writePersistedSnapshot(statusSnapshot.current)
+    } catch {
+      // The next scheduled poll remains the fallback if the immediate refresh fails.
+    }
+  }, [])
+
   const loadPersistedNotifications = useCallback(async () => {
     try {
       const incoming = await getNotifications()
@@ -228,10 +240,11 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     markRead,
     clearAll,
     recordRoomUpdate,
+    refreshRooms,
     preferences,
     setPreferences,
     latestRooms,
-  }), [notifications, unreadCount, markAllRead, markRead, clearAll, recordRoomUpdate, preferences, setPreferences, latestRooms])
+  }), [notifications, unreadCount, markAllRead, markRead, clearAll, recordRoomUpdate, refreshRooms, preferences, setPreferences, latestRooms])
 
   return (
     <NotificationContext.Provider value={value}>

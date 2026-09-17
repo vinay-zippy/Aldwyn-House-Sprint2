@@ -1,6 +1,6 @@
 .upcoming-arrivals {
   background: #ffffff;
-  border: 1px solid #e7e3dc;
+  border: 1px solid #e2ded6;
   border-radius: 18px;
   padding: 28px;
   box-shadow: 0 4px 18px rgba(28, 35, 32, 0.04);
@@ -16,7 +16,7 @@
 
 .section-eyebrow {
   margin: 0 0 6px;
-  color: #7c756b;
+  color: #5b6470;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -25,14 +25,14 @@
 
 .arrivals-header h2 {
   margin: 0;
-  color: #252a27;
+  color: #1f2933;
   font-size: 25px;
   font-weight: 650;
 }
 
 .section-description {
   margin: 7px 0 0;
-  color: #858078;
+  color: #5b6470;
   font-size: 14px;
 }
 
@@ -40,13 +40,13 @@
   min-width: 88px;
   padding: 12px 16px;
   border-radius: 14px;
-  background: #f5f3ee;
+  background: #f3ebdd;
   text-align: center;
 }
 
 .arrival-count strong {
   display: block;
-  color: #252a27;
+  color: #1f2933;
   font-size: 24px;
   line-height: 1.1;
 }
@@ -54,7 +54,7 @@
 .arrival-count span {
   display: block;
   margin-top: 4px;
-  color: #817b72;
+  color: #5b6470;
   font-size: 12px;
 }
 
@@ -70,8 +70,8 @@
 
 .arrivals-table th {
   padding: 12px 14px;
-  border-bottom: 1px solid #e8e5df;
-  color: #858078;
+  border-bottom: 1px solid #e2ded6;
+  color: #5b6470;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -81,8 +81,8 @@
 
 .arrivals-table td {
   padding: 16px 14px;
-  border-bottom: 1px solid #efede8;
-  color: #4f554f;
+  border-bottom: 1px solid #e2ded6;
+  color: #1f2933;
   font-size: 14px;
   vertical-align: middle;
 }
@@ -92,7 +92,7 @@
 }
 
 .arrivals-table tbody tr:hover {
-  background: #faf9f6;
+  background: #f4f1ea;
 }
 
 .guest-cell {
@@ -109,15 +109,15 @@
   height: 38px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #e9eee8;
-  color: #435047;
+  background: #dce6f0;
+  color: #172a46;
   font-size: 14px;
   font-weight: 700;
 }
 
 .guest-cell strong {
   display: block;
-  color: #292e2b;
+  color: #1f2933;
   font-weight: 600;
 }
 
@@ -126,7 +126,7 @@
   max-width: 180px;
   margin-top: 3px;
   overflow: hidden;
-  color: #99938a;
+  color: #66717c;
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -137,16 +137,16 @@
   align-items: center;
   padding: 6px 10px;
   border-radius: 999px;
-  background: #f1f1ed;
-  color: #5e625d;
+  background: #f3ebdd;
+  color: #5b6470;
   font-size: 12px;
   font-weight: 600;
   text-transform: capitalize;
 }
 
 .status-confirmed {
-  background: #e9f2e9;
-  color: #416447;
+  background: #dce6f0;
+  color: #3f7657;
 }
 
 .arrivals-state {
@@ -156,9 +156,9 @@
   justify-content: center;
   flex-direction: column;
   gap: 12px;
-  border: 1px dashed #ddd9d1;
+  border: 1px dashed #e2ded6;
   border-radius: 14px;
-  color: #817b72;
+  color: #5b6470;
   text-align: center;
 }
 
@@ -170,21 +170,21 @@
 .loading-spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid #e5e1d9;
-  border-top-color: #59645b;
+  border: 3px solid #e2ded6;
+  border-top-color: #2f5d8c;
   border-radius: 50%;
   animation: arrivals-spin 0.8s linear infinite;
 }
 
 .error-state {
-  color: #8a514b;
+  color: #a34f4f;
 }
 
 .error-state button {
   padding: 8px 15px;
   border: 0;
   border-radius: 8px;
-  background: #303832;
+  background: #26352d;
   color: #ffffff;
   cursor: pointer;
   font-size: 13px;

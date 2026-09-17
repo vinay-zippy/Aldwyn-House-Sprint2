@@ -15,7 +15,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 
   if (type === 'reservation') {
     if (normalized === 'confirmed' || normalized === 'checked_in') {
-      colorClasses = 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      colorClasses = 'bg-[#e4f0e8] text-[#3f7657] border-[#b8d0bd]'
     } else if (normalized === 'pending') {
       colorClasses = 'bg-amber-50 text-amber-700 border-amber-200'
     } else if (normalized === 'cancelled') {
@@ -25,7 +25,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     }
   } else if (type === 'room') {
     if (normalized === 'available' || normalized === 'ready') {
-      colorClasses = 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      colorClasses = 'bg-[#e4f0e8] text-[#3f7657] border-[#b8d0bd]'
     } else if (normalized === 'occupied' || normalized === 'reserved') {
       colorClasses = 'bg-sky-50 text-sky-700 border-sky-200'
     } else if (normalized === 'cleaning' || normalized === 'dirty') {
@@ -35,7 +35,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     }
   } else if (type === 'recommendation') {
     if (normalized === 'approved') {
-      colorClasses = 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      colorClasses = 'bg-[#e4f0e8] text-[#3f7657] border-[#b8d0bd]'
     } else if (normalized === 'rejected') {
       colorClasses = 'bg-rose-50 text-rose-700 border-rose-200'
     } else {

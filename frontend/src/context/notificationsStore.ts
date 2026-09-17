@@ -9,6 +9,7 @@ export interface NotificationContextValue {
   markRead: (id: string) => void
   clearAll: () => void
   recordRoomUpdate: (room: Room, previousStatus?: string) => void
+  refreshRooms: () => Promise<void>
   preferences: NotificationPreferences
   setPreferences: (preferences: Partial<NotificationPreferences>) => void
   latestRooms: Room[]

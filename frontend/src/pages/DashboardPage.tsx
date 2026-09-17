@@ -151,7 +151,7 @@ export const DashboardPage: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/walk-in-guest')}
-            className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 cursor-pointer"
+            className="rounded-md bg-[#101c2c] px-3 py-2 text-xs font-semibold text-white hover:bg-[#172a46] cursor-pointer"
           >
             Add walk-in guest
           </button>
@@ -198,7 +198,7 @@ export const DashboardPage: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate('/arrivals')}
-              className="text-xs font-semibold text-emerald-700 hover:text-emerald-800 flex items-center space-x-1 cursor-pointer"
+              className="text-xs font-semibold text-white hover:text-white flex items-center space-x-1 cursor-pointer"
             >
               <span>View All</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -270,7 +270,7 @@ export const DashboardPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate('/rooms')}
-                className="text-[11px] text-emerald-700 hover:underline cursor-pointer"
+                className="text-[11px] text-white hover:text-white hover:underline cursor-pointer"
               >
                 View Grid
               </button>

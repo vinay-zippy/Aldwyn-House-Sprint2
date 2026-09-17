@@ -13,7 +13,7 @@ const categoryContent: Record<CategoryKey, AmenityContent> = {
     label: 'Wellness at Aldwyn House', title: 'Serenity Spa', subtitle: 'Relax • Rejuvenate • Restore', action: 'Explore Spa',
     description: 'A tranquil wellness space offering relaxing treatments and personalized spa experiences for hotel guests.',
     details: ['Swedish, deep tissue and hot stone massage', 'Aromatherapy, couples spa and facial treatments', 'Open daily 08:00 - 20:00', '60 or 90 minute treatments', 'Lower ground floor · advance reservations recommended'],
-    images: ['https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1600334129128-685c5582fd35?auto=format&fit=crop&w=1200&q=80'], icon: <Sparkles className="h-4 w-4" />,
+    images: ['https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1552693673-1bf958298935?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1600334129128-685c5582fd35?auto=format&fit=crop&w=1200&q=80', 'https://images.unsplash.com/photo-1596178065887-1198b6148b2b?auto=format&fit=crop&w=1200&q=80'], icon: <Sparkles className="h-4 w-4" />,
   },
   dining: {
     label: 'Dining at Aldwyn House', title: 'Aldwyn Dining', subtitle: 'Taste • Gather • Indulge', action: 'Explore Dining',
